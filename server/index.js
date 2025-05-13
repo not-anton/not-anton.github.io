@@ -14,12 +14,16 @@ console.log('Allowed origins:', allowedOrigins);
 
 const io = new Server(server, {
   cors: {
-    origin: '*', // TEMP: allow all origins for debugging
-    methods: ['GET', 'POST']
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
-app.use(cors()); // TEMP: allow all origins for debugging
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
