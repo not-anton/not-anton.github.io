@@ -6,11 +6,10 @@ const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 const allowedOrigins = [
-  'https://not-anton.github.io',
-  'http://localhost:5173',
-  'https://pointless-frontend.onrender.com'
+  'https://pointless-frontend.onrender.com',
+  'https://not-anton.github.io'
+  // 'http://localhost:5173' // Uncomment if you need local dev
 ];
-console.log('Allowed origins:', allowedOrigins);
 
 const io = new Server(server, {
   cors: {
