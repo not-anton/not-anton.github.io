@@ -7,7 +7,9 @@ let socket;
 
 export function getSocket() {
   if (!socket) {
-    socket = io(BACKEND_URL);
+    socket = io(BACKEND_URL, {
+      transports: ['websocket']
+    });
   }
   return socket;
 } 
