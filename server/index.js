@@ -7,13 +7,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Replace with your GitHub Pages URL for production
+    origin: ['https://not-anton.github.io'],
     methods: ['GET', 'POST']
   }
 });
 
 app.use(cors({
-  origin: ['https://your-frontend-domain.com', 'http://localhost:5173'],
+  origin: ['https://not-anton.github.io', 'http://localhost:5173'],
   methods: ['GET', 'POST'],
 }));
 app.use(express.json());
