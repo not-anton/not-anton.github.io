@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Box, Text, Switch } from '@chakra-ui/react';
 import { FaMoon } from 'react-icons/fa';
 
-export default function DarkModeModal() {
+export default function DarkModeModal({ buttonProps = {} }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [toggle, setToggle] = useState(true);
   const [tries, setTries] = useState(0);
@@ -31,6 +31,7 @@ export default function DarkModeModal() {
         color="#fff"
         border="3px solid #fff"
         _hover={{ bg: '#333' }}
+        {...buttonProps}
       />
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />

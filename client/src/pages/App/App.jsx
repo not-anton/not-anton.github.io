@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, Heading, IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Button, HStack, Input, VStack, Text, Switch } from '@chakra-ui/react';
+import { Box, Heading, IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Button, HStack, Input, VStack, Text, Switch, useBreakpointValue, Flex } from '@chakra-ui/react';
 import { FaMoon, FaSun, FaDesktop, FaCopy, FaInfoCircle } from 'react-icons/fa';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useLocation, useMatch, Link } from 'react-router-dom';
 import Room from '../Room/Room.jsx';
@@ -305,7 +305,7 @@ function Landing() {
   );
 }
 
-function AboutModal() {
+function AboutModal({ buttonProps = {} }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <>
@@ -316,6 +316,7 @@ function AboutModal() {
         top={4}
         right={4}
         zIndex={1000}
+        {...buttonProps}
         onClick={onOpen}
         bg="#222"
         color="#ffe600"
@@ -372,54 +373,73 @@ function AppHeader({ user, roomCode }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   }
+  const darkModeButtonProps = useBreakpointValue({
+    base: { display: 'none' },
+    md: { position: 'fixed', top: 4, left: 4, zIndex: 1000, 'aria-label': 'Toggle dark mode', title: 'Toggle dark mode', size: 'lg', tabIndex: 0 }
+  });
+  const infoButtonProps = useBreakpointValue({
+    base: { display: 'none' },
+    md: { position: 'fixed', top: 4, right: 4, zIndex: 1000, 'aria-label': 'About Point-Less', title: 'About Point-Less', size: 'lg', tabIndex: 0 }
+  });
   return (
-    <Box display="flex" flexDir={["column", "row"]} alignItems={["flex-start", "center"]} justifyContent="center" mb={8} position="relative" px={[2, 0]}>
-      <AboutModal />
-      <Heading as="h1" size="xl" color="#ffe600" letterSpacing="tight" fontFamily="inherit" textAlign={["left", "center"]}>
-        Point-Less
-      </Heading>
-      {user && roomCode && (
-        <Box
-          mt={[2, 0]}
-          ml={[0, 6]}
-          alignSelf={["flex-start", "center"]}
-          display="flex"
-          alignItems="center"
-          fontFamily="inherit"
-          fontWeight="bold"
-          fontSize={["md", "lg"]}
-          color="#fff"
-          bg="#222"
-          px={[3, 4]}
-          py={[1, 2]}
-          borderRadius="xl"
-          border="3px solid #fff"
-        >
-          <span style={{ marginRight: 8, color: '#ffe600' }}>Room:</span>
-          <span>{roomCode}</span>
-          <Button
-            aria-label={`Copy invite link for room ${roomCode}`}
-            title={`Copy invite link for room ${roomCode}`}
-            onClick={handleCopy}
-            colorScheme="yellow"
-            fontFamily="inherit"
-            fontWeight="bold"
-            border="none"
-            borderRadius="xl"
-            bg="transparent"
-            color="#ffe600"
-            _hover={{ bg: 'transparent', color: '#ff2e63' }}
-            boxShadow="none"
-            size="sm"
-            px={2}
-            ml={2}
-            minW={0}
-          >
-            <FaCopy />
-          </Button>
+    <header>
+      <Box mb={8} position="relative" px={[2, 0]}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={{ base: 2, md: 0 }}>
+          <DarkModeModal buttonProps={darkModeButtonProps} />
+          <AboutModal buttonProps={infoButtonProps} />
         </Box>
-      )}
-    </Box>
+        <Flex direction={['column', 'row']} align="center" justify="center" gap={[2, 6]}>
+          <Heading as="h1" size="xl" color="#ffe600" letterSpacing="tight" fontFamily="inherit" textAlign={["left", "center"]}>
+            Point-Less
+          </Heading>
+          {user && roomCode && (
+            <Box
+              mt={[2, 0]}
+              ml={[0, 6]}
+              alignSelf={["flex-start", "center"]}
+              display="flex"
+              alignItems="center"
+              fontFamily="inherit"
+              fontWeight="bold"
+              fontSize={["md", "lg"]}
+              color="#fff"
+              bg="#222"
+              px={[3, 4]}
+              py={[1, 2]}
+              borderRadius="xl"
+              border="3px solid #fff"
+              as="section"
+              aria-label="Room code section"
+            >
+              <span style={{ marginRight: 8, color: '#ffe600' }}>Room:</span>
+              <span>{roomCode}</span>
+              <Button
+                aria-label={`Copy invite link for room ${roomCode}`}
+                title={`Copy invite link for room ${roomCode}`}
+                onClick={handleCopy}
+                colorScheme="yellow"
+                fontFamily="inherit"
+                fontWeight="bold"
+                border="none"
+                borderRadius="xl"
+                bg="transparent"
+                color="#ffe600"
+                _hover={{ bg: 'transparent', color: '#ff2e63' }}
+                boxShadow="none"
+                size="lg"
+                px={2}
+                ml={2}
+                minW={0}
+                tabIndex={0}
+                _focus={{ boxShadow: '0 0 0 3px #ffe600' }}
+              >
+                <FaCopy />
+              </Button>
+            </Box>
+          )}
+        </Flex>
+      </Box>
+    </header>
   );
 }
 
@@ -435,7 +455,6 @@ function App() {
   return (
     <Router>
       <Box minH="100vh" bg="#181825" fontFamily="'Luckiest Guy', 'Bangers', cursive" py={8}>
-        <DarkModeModal />
         <AppHeader user={currentUser} roomCode={currentRoomCode} />
         <Routes>
           <Route path="/" element={<Landing />} />
