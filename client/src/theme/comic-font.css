@@ -1,0 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Bangers&display=swap');
+
+body, html, #root {
+  font-family: 'Luckiest Guy', 'Bangers', cursive !important;
+} 
