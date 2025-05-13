@@ -10,18 +10,16 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://pointless-frontend.onrender.com'
 ];
+console.log('Allowed origins:', allowedOrigins);
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: '*', // TEMP: allow all origins for debugging
     methods: ['GET', 'POST']
   }
 });
 
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST'],
-}));
+app.use(cors()); // TEMP: allow all origins for debugging
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
