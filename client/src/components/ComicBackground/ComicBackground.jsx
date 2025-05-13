@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 
 const PALETTE = ['#00e0ff', '#ffe600', '#ff2e63', '#a259f7', '#aaff00'];
 const SHAPE_TYPES = ['circle', 'triangle', 'diamond', 'rectangle'];
@@ -105,11 +105,83 @@ function generateShapes(mainBox = { x: 0.5, y: 0.5, w: 350, h: 340 }, count = 6)
   return placed;
 }
 
+function isShapeOverlappingMain(shape, mainBox, titleCard, pad = 32) {
+  const { x, y, size, type } = shape;
+  let w = type === 'rectangle' ? size : size;
+  let h = type === 'rectangle' ? size / 2 : size;
+  // Main box
+  if (
+    x + w > mainBox.x - pad &&
+    x < mainBox.x + mainBox.w + pad &&
+    y + h > mainBox.y - pad &&
+    y < mainBox.y + mainBox.h + pad
+  ) return true;
+  // Title card
+  if (
+    x + w > titleCard.x - pad &&
+    x < titleCard.x + titleCard.w + pad &&
+    y + h > titleCard.y - pad &&
+    y < titleCard.y + titleCard.h + pad
+  ) return true;
+  return false;
+}
+
 export default function ComicBackground() {
-  // Memoize shapes for this render
-  const shapes = useMemo(() => generateShapes(), []);
+  const [shapes, setShapes] = useState(() => generateShapes());
+  const lastDims = useRef({ w: window.innerWidth, h: window.innerHeight });
+
+  useEffect(() => {
+    function handleResize() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const { w: lastW, h: lastH } = lastDims.current;
+      const significant = Math.abs(w - lastW) > lastW * 0.1 || Math.abs(h - lastH) > lastH * 0.1;
+      // Get exclusion zones
+      const mainBox = { x: w / 2 - 350 / 2, y: h / 2 - 340 / 2, w: 350, h: 340 };
+      const titlePad = 24;
+      const titleCard = { x: w / 2 - 175, y: 0 + titlePad, w: 350, h: 80 + titlePad * 2 };
+      // Check if any shape overlaps
+      const overlaps = shapes.some(s => isShapeOverlappingMain(s, mainBox, titleCard, 32));
+      if (significant || overlaps) {
+        setShapes(generateShapes());
+        lastDims.current = { w, h };
+      }
+    }
+    let timeout;
+    function debounced() {
+      clearTimeout(timeout);
+      timeout = setTimeout(handleResize, 120);
+    }
+    window.addEventListener('resize', debounced);
+    return () => window.removeEventListener('resize', debounced);
+  }, [shapes]);
+
   return (
     <Box position="fixed" top={0} left={0} w="100vw" h="100vh" zIndex={0} pointerEvents="none">
+      {/* Halftone overlay */}
+      <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.12 }}>
+        <defs>
+          <pattern id="halftone" width="18" height="18" patternUnits="userSpaceOnUse">
+            <circle cx="9" cy="9" r="3" fill="#000" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#halftone)" />
+      </svg>
+      {/* Action lines */}
+      <svg width="100vw" height="100vh" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.10 }}>
+        {[...Array(12)].map((_, i) => (
+          <line
+            key={i}
+            x1="50%" y1="0%"
+            x2={`${50 + 40 * Math.cos((i/12)*2*Math.PI)}%`}
+            y2={`${10 + 80 * Math.sin((i/12)*2*Math.PI)}%`}
+            stroke="#ff2e63"
+            strokeWidth="6"
+            strokeLinecap="round"
+            opacity="0.5"
+          />
+        ))}
+      </svg>
       {shapes.map((shape, i) => {
         const { type, color, x, y, size, rotation } = shape;
         const border = 12;
