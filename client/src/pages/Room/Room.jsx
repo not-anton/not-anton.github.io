@@ -4,6 +4,7 @@ import {
 } from '@chakra-ui/react';
 import { FaCopy, FaPaste } from 'react-icons/fa';
 import PlayerCard from '../../components/PlayerCard/PlayerCard.jsx';
+import { useCallback } from 'react';
 
 const FIBONACCI = [1, 2, 3, 5, 8];
 const PALETTE = ['#00e0ff', '#ffe600', '#ff2e63', '#a259f7', '#aaff00'];
@@ -19,6 +20,8 @@ export default function Room({ user, room, socket }) {
   const [startPop, setStartPop] = useState(false);
   const prevPointingActive = useRef(room?.pointingActive);
   const [crack, setCrack] = useState(false);
+  const [poofedUsers, setPoofedUsers] = useState([]);
+  const prevUsersRef = useRef(Object.keys(room?.users || {}));
 
   const allLocked = room && Object.values(room.users).every(u => u.hasVoted);
   const userColors = useMemo(() => {
@@ -47,6 +50,19 @@ export default function Room({ user, room, socket }) {
       setTimeout(() => setResultsPop(false), 1500);
     }
   }, [room?.revealed]);
+
+  useEffect(() => {
+    const prevUsers = prevUsersRef.current;
+    const currentUsers = Object.keys(room?.users || {});
+    const leftUsers = prevUsers.filter(id => !currentUsers.includes(id));
+    if (leftUsers.length > 0) {
+      setPoofedUsers(prev => [...prev, ...leftUsers]);
+      setTimeout(() => {
+        setPoofedUsers(prev => prev.filter(id => !leftUsers.includes(id)));
+      }, 1000);
+    }
+    prevUsersRef.current = currentUsers;
+  }, [room?.users]);
 
   // Helper: generate 8-char room code (uppercase letters/numbers)
   function generateRoomCode() {
@@ -225,6 +241,22 @@ export default function Room({ user, room, socket }) {
               socketId={id}
               showTransfer={isHost && id !== user.userId}
               onTransfer={handleTransferHost}
+              poof={false}
+            />
+          ))}
+          {poofedUsers.map(id => (
+            <PlayerCard
+              key={id + '-poof'}
+              name={prevUsersRef.current.find(u => u === id) ? room.users[id]?.name || 'User' : 'User'}
+              isHost={false}
+              hasVoted={false}
+              allLocked={false}
+              color={'#fff'}
+              point={null}
+              socketId={id}
+              showTransfer={false}
+              onTransfer={() => {}}
+              poof={true}
             />
           ))}
         </SimpleGrid>
@@ -287,7 +319,7 @@ export default function Room({ user, room, socket }) {
               const userIds = room && room.users ? Object.keys(room.users) : [];
               const allLocked = userIds.length && userIds.every(id => room.users[id].hasVoted);
               const lockInTimes = room && room.lockInTimes ? room.lockInTimes : {};
-              const showResults = room.revealed && allLocked && Object.keys(lockInTimes).length === userIds.length;
+              const showResults = room.revealed;
               if (!showResults) {
                 return (
                   <Box w="100%" textAlign="center" color="#181825" fontSize="lg" py={6}>
