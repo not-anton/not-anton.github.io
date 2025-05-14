@@ -1,3 +1,7 @@
+# Point-Less
+
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC--BY--NC%204.0-lightgrey.svg)](LICENSE)
+
 # Story Expedition
 
 A real-time, in-memory story-pointing app for agile teams.
@@ -21,3 +25,9 @@ A real-time, in-memory story-pointing app for agile teams.
 ---
 
 See `/client/README.md` and `/server/README.md` for setup instructions.
+
+## License
+
+This project is open source for non-commercial use only, under the [Creative Commons Attribution-NonCommercial 4.0 International License](LICENSE).
+
+For commercial licensing, contact [hello@point-less.work](mailto:hello@point-less.work).
