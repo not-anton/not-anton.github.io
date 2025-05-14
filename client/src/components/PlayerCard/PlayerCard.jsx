@@ -10,6 +10,12 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
   const showPoint = allLocked && typeof point !== 'undefined' && point !== null;
   // Animation state for pop
   const [pop, setPop] = useState(false);
+  const [justMounted, setJustMounted] = useState(false);
+  useEffect(() => {
+    setJustMounted(true);
+    const t = setTimeout(() => setJustMounted(false), 400);
+    return () => clearTimeout(t);
+  }, []);
   useEffect(() => {
     if (showLocked || showPoint) {
       setPop(true);
@@ -162,6 +168,7 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
           transition: 'box-shadow 0.3s, border-color 0.3s',
           boxShadow: showLocked ? '0 0 24px 6px #ffe600, 0 4px 16px #0004' : '0 4px 16px #0004',
           borderColor: showLocked ? '#ffe600' : '#fff',
+          animation: justMounted ? 'cardPop 0.38s cubic-bezier(.68,-0.55,.27,1.55)' : undefined,
         }}
       >
         {/* Host crown icon in top-right corner if host */}
@@ -291,6 +298,12 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
           30% { transform: scale(1.13) rotate(-1deg); }
           60% { transform: scale(0.98) rotate(0.5deg); }
           100% { transform: scale(1) rotate(0deg); }
+        }
+        @keyframes cardPop {
+          0% { transform: scaleY(0.7) scaleX(1.1); }
+          40% { transform: scaleY(1.2) scaleX(0.95); }
+          70% { transform: scaleY(0.95) scaleX(1.05); }
+          100% { transform: scaleY(1) scaleX(1); }
         }
       `}</style>
     </>
