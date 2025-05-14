@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { Box, Heading, IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Button, HStack, Input, VStack, Text, Switch, useBreakpointValue, Flex } from '@chakra-ui/react';
 import { FaMoon, FaSun, FaDesktop, FaCopy, FaInfoCircle } from 'react-icons/fa';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, useLocation, useMatch, Link } from 'react-router-dom';
-import Room from '../Room/Room.jsx';
 import { getSocket } from '../../components/socket.js';
 import '../../theme/comic-font.css';
 import rough from 'roughjs/bundled/rough.esm.js';
-import ComicBackground from '../../components/ComicBackground/ComicBackground.jsx';
 import DarkModeModal from '../../components/DarkModeModal/DarkModeModal.jsx';
+
+const Room = lazy(() => import('../Room/Room.jsx'));
+const ComicBackground = lazy(() => import('../../components/ComicBackground/ComicBackground.jsx'));
 
 function ComicCard({ children, accent = 'cyan' }) {
   // Accent can be 'cyan', 'yellow', 'pink', 'purple', 'lime'
@@ -29,17 +30,18 @@ function ComicCard({ children, accent = 'cyan' }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         pointerEvents="none"
+        aria-hidden="true"
       >
         <rect x="10" y="10" width="400" height="200" rx="32" stroke="#fff" strokeWidth="10" strokeDasharray="24 12 8 12" />
       </svg>
       {/* Geometric shapes */}
-      <svg width="60" height="60" style={{ position: 'absolute', top: -30, left: -30, zIndex: 1 }}>
+      <svg width="60" height="60" style={{ position: 'absolute', top: -30, left: -30, zIndex: 1 }} aria-hidden="true">
         <circle cx="30" cy="30" r="28" fill={accentColor} stroke="#fff" strokeWidth="6" />
       </svg>
-      <svg width="40" height="40" style={{ position: 'absolute', bottom: -20, right: -20, zIndex: 1 }}>
+      <svg width="40" height="40" style={{ position: 'absolute', bottom: -20, right: -20, zIndex: 1 }} aria-hidden="true">
         <polygon points="20,0 40,40 0,40" fill="#ff2e63" stroke="#fff" strokeWidth="5" />
       </svg>
-      <svg width="50" height="20" style={{ position: 'absolute', top: 10, right: -30, zIndex: 1 }}>
+      <svg width="50" height="20" style={{ position: 'absolute', top: 10, right: -30, zIndex: 1 }} aria-hidden="true">
         <rect x="0" y="0" width="50" height="20" rx="8" fill="#ffe600" stroke="#fff" strokeWidth="4" />
       </svg>
       <Box position="relative" zIndex={2}>
@@ -185,7 +187,9 @@ function Landing() {
   }
   return (
     <>
-      <ComicBackground />
+      <Suspense fallback={null}>
+        <ComicBackground />
+      </Suspense>
       <Box
         maxW="400px"
         mx="auto"
@@ -461,6 +465,10 @@ function App() {
           <Route path="/room/:roomCode" element={<JoinRoomOnly onJoin={handleJoinRoom} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        {/* Comic-style footer credit */}
+        <Box as="footer" w="100%" mt={8} py={4} textAlign="center" fontFamily="'Luckiest Guy', 'Bangers', cursive'" fontSize="lg" color="#ffe600" bg="transparent" zIndex={10}>
+          BAM! ZAP! © 2024 Iuma Estabrooks
+        </Box>
       </Box>
     </Router>
   );
@@ -521,12 +529,18 @@ function JoinRoomOnly({ onJoin }) {
 
   if (joined && room) {
     const userId = getOrCreateUserId();
-    return <Box className="card-purple"><Room user={{ name, roomCode, userId }} room={room} socket={socket} /></Box>;
+    return (
+      <Suspense fallback={<div style={{color:'#fff',textAlign:'center'}}>Loading room...</div>}>
+        <Box className="card-purple"><Room user={{ name, roomCode, userId }} room={room} socket={socket} /></Box>
+      </Suspense>
+    );
   }
 
   return (
     <>
-      <ComicBackground />
+      <Suspense fallback={null}>
+        <ComicBackground />
+      </Suspense>
       <Box
         maxW="400px"
         mx="auto"

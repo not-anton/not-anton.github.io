@@ -159,7 +159,7 @@ export default function ComicBackground() {
   return (
     <Box position="fixed" top={0} left={0} w="100vw" h="100vh" zIndex={0} pointerEvents="none">
       {/* Halftone overlay */}
-      <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.12 }}>
+      <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.12 }} aria-hidden="true">
         <defs>
           <pattern id="halftone" width="18" height="18" patternUnits="userSpaceOnUse">
             <circle cx="9" cy="9" r="3" fill="#000" />
@@ -168,7 +168,7 @@ export default function ComicBackground() {
         <rect width="100%" height="100%" fill="url(#halftone)" />
       </svg>
       {/* Action lines */}
-      <svg width="100vw" height="100vh" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.10 }}>
+      <svg width="100vw" height="100vh" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.10 }} aria-hidden="true">
         {[...Array(12)].map((_, i) => (
           <line
             key={i}
@@ -187,7 +187,7 @@ export default function ComicBackground() {
         const border = 12;
         if (type === 'circle') {
           return (
-            <svg key={i} width={size} height={size} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }}>
+            <svg key={i} width={size} height={size} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }} aria-hidden="true">
               <circle
                 cx={size/2}
                 cy={size/2}
@@ -208,7 +208,7 @@ export default function ComicBackground() {
           ];
           const pointsStr = points.map(p => p.join(",")).join(" ");
           return (
-            <svg key={i} width={size} height={size} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }}>
+            <svg key={i} width={size} height={size} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }} aria-hidden="true">
               <polygon
                 points={pointsStr}
                 fill={color}
@@ -222,7 +222,7 @@ export default function ComicBackground() {
         if (type === 'rectangle') {
           const rx = size * 0.08;
           return (
-            <svg key={i} width={size} height={size/2} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }}>
+            <svg key={i} width={size} height={size/2} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }} aria-hidden="true">
               <rect
                 x={border/2}
                 y={border/4}
@@ -247,7 +247,7 @@ export default function ComicBackground() {
           ];
           const pointsStr = points.map(p => p.join(",")).join(" ");
           return (
-            <svg key={i} width={size} height={size} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }}>
+            <svg key={i} width={size} height={size} style={{ position: 'absolute', left: x, top: y, transform: `rotate(${rotation}deg)` }} aria-hidden="true">
               <polygon
                 points={pointsStr}
                 fill={color}

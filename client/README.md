@@ -37,3 +37,31 @@ If you are developing a production application, we recommend using TypeScript wi
 ## Backend Configuration
 
 - The frontend expects a backend Socket.IO server. You must deploy the backend (see `/server/README.md`) and update the backend URL in the frontend code if needed.
+
+## Tech Stack
+
+- React (Vite)
+- Chakra UI
+- React Router
+- Socket.IO-client
+- Comic fonts (Luckiest Guy, Bangers)
+
+## Contributing
+
+Contributions are welcome! Please open an issue or pull request. For major changes, open an issue first to discuss what you'd like to change.
+
+1. Fork the repo
+2. Create your feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a pull request
+
+---
+
+## Privacy Policy
+
+This frontend does not collect or store any personal data. All sessions are in-memory and not persisted. For questions, contact [hello@point-less.work](mailto:hello@point-less.work).
+
+## Terms of Use
+
+This project is provided as-is for non-commercial use only. By using this app, you agree not to use it for commercial purposes without a commercial license. See LICENSE for details.
