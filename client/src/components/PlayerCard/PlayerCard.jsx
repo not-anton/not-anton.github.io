@@ -12,9 +12,13 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
   const [pop, setPop] = useState(false);
   const [justMounted, setJustMounted] = useState(false);
   useEffect(() => {
-    setJustMounted(true);
-    const t = setTimeout(() => setJustMounted(false), 400);
-    return () => clearTimeout(t);
+    // Delay the squash-and-stretch animation so fade-in can finish
+    const delay = setTimeout(() => {
+      setJustMounted(true);
+      const t = setTimeout(() => setJustMounted(false), 400);
+      return () => clearTimeout(t);
+    }, 400); // 400ms delay to match fade-in
+    return () => clearTimeout(delay);
   }, []);
   useEffect(() => {
     if (showLocked || showPoint) {

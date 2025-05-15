@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { Box, Heading, IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Button, HStack, Input, VStack, Text, Switch, useBreakpointValue, Flex } from '@chakra-ui/react';
 import { FaMoon, FaSun, FaDesktop, FaCopy, FaInfoCircle } from 'react-icons/fa';
@@ -7,9 +8,11 @@ import { getSocket } from '../../components/socket.js';
 import '../../theme/comic-font.css';
 import rough from 'roughjs/bundled/rough.esm.js';
 import DarkModeModal from '../../components/DarkModeModal/DarkModeModal.jsx';
+import AppHeader from '../../components/Header.jsx';
+import Footer from '../../components/Footer.jsx';
+import ComicBackground from '../../components/ComicBackground/ComicBackground.jsx';
 
 const Room = lazy(() => import('../Room/Room.jsx'));
-const ComicBackground = lazy(() => import('../../components/ComicBackground/ComicBackground.jsx'));
 
 function ComicCard({ children, accent = 'cyan' }) {
   // Accent can be 'cyan', 'yellow', 'pink', 'purple', 'lime'
@@ -185,14 +188,12 @@ function Landing() {
     }
   }
   return (
-    <>
-      <Suspense fallback={null}>
-        <ComicBackground />
-      </Suspense>
+    <Box flex="1" minHeight={0} position="relative" overflow="hidden" width="100%" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
+      <ComicBackground style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }} />
       <Box
         maxW="400px"
         mx="auto"
-        p={[2, 4, 8]}
+        p={{ base: 2, md: 4, lg: 8 }}
         borderRadius="2xl"
         border="8px solid #fff"
         bg="#222"
@@ -202,8 +203,11 @@ function Landing() {
         textAlign="center"
         position="relative"
         zIndex={1}
+        flex="1"
+        display="flex"
+        flexDirection="column"
       >
-        <Heading mb={6} size="lg" color="#ffe600" fontFamily="inherit" letterSpacing="tight" fontSize={["xl", "2xl"]}>
+        <Heading mb={6} size="lg" color="#ffe600" fontFamily="inherit" letterSpacing="tight" fontSize={{ base: "xl", md: "2xl" }}>
           Welcome to Point-Less
         </Heading>
         <HStack mb={6} spacing={4} justify="center">
@@ -219,7 +223,7 @@ function Landing() {
             _hover={{ bg: '#ff2e63', color: '#fff', borderColor: '#fff' }}
             boxShadow="0 2px 8px #0004"
             height="56px"
-            fontSize={["md", "lg"]}
+            fontSize={{ base: "md", md: "lg" }}
             flex={1}
           >
             Create Room
@@ -236,7 +240,7 @@ function Landing() {
             _hover={{ bg: '#ff2e63', color: '#fff', borderColor: '#fff' }}
             boxShadow="0 2px 8px #0004"
             height="56px"
-            fontSize={["md", "lg"]}
+            fontSize={{ base: "md", md: "lg" }}
             flex={1}
           >
             Join Room
@@ -252,7 +256,7 @@ function Landing() {
               required
               fontFamily="inherit"
               fontWeight="bold"
-              fontSize={["md", "lg"]}
+              fontSize={{ base: "md", md: "lg" }}
               bg="#181825"
               color="#fff"
               border="4px solid #fff"
@@ -271,7 +275,7 @@ function Landing() {
                 required
                 fontFamily="inherit"
                 fontWeight="bold"
-                fontSize={["md", "lg"]}
+                fontSize={{ base: "md", md: "lg" }}
                 bg="#181825"
                 color="#fff"
                 border="4px solid #fff"
@@ -296,7 +300,6 @@ function Landing() {
               _hover={{ bg: '#ff2e63', color: '#fff', borderColor: '#fff' }}
               boxShadow="0 2px 8px #0004"
               height="56px"
-              fontSize={["md", "lg"]}
             >
               {mode === 'create' ? 'Create Room' : 'Join Room'}
             </Button>
@@ -304,7 +307,7 @@ function Landing() {
           </VStack>
         </form>
       </Box>
-    </>
+    </Box>
   );
 }
 
@@ -315,17 +318,13 @@ function AboutModal({ buttonProps = {} }) {
       <IconButton
         aria-label="About Point-Less"
         icon={<FaInfoCircle />}
-        position="fixed"
-        top={4}
-        right={4}
-        zIndex={1000}
-        {...buttonProps}
         onClick={onOpen}
-        bg="#222"
+        bg="transparent"
         color="#ffe600"
-        border="3px solid #fff"
-        _hover={{ bg: '#ff2e63', color: '#fff' }}
-        fontSize="1.5em"
+        border="none"
+        _hover={{ color: '#ff2e63', bg: 'transparent' }}
+        fontSize="1.7em"
+        {...buttonProps}
       />
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
@@ -369,80 +368,11 @@ function AboutModal({ buttonProps = {} }) {
   );
 }
 
-function AppHeader({ user, roomCode }) {
-  const [copied, setCopied] = useState(false);
-  function handleCopy() {
-    navigator.clipboard.writeText(window.location.origin + '/room/' + roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  }
-  const darkModeButtonProps = useBreakpointValue({
-    base: { display: 'none' },
-    md: { position: 'fixed', top: 4, left: 4, zIndex: 1000, 'aria-label': 'Toggle dark mode', title: 'Toggle dark mode', size: 'lg', tabIndex: 0 }
-  });
-  const infoButtonProps = useBreakpointValue({
-    base: { display: 'none' },
-    md: { position: 'fixed', top: 4, right: 4, zIndex: 1000, 'aria-label': 'About Point-Less', title: 'About Point-Less', size: 'lg', tabIndex: 0 }
-  });
+function ComicSuspenseFallback() {
   return (
-    <header>
-      <Box mb={8} position="relative" px={[2, 0]}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={{ base: 2, md: 0 }}>
-          <DarkModeModal buttonProps={darkModeButtonProps} />
-          <AboutModal buttonProps={infoButtonProps} />
-        </Box>
-        <Flex direction={['column', 'row']} align="center" justify="center" gap={[2, 6]}>
-          <Heading as="h1" size="xl" color="#ffe600" letterSpacing="tight" fontFamily="inherit" textAlign={["left", "center"]}>
-            Point-Less
-          </Heading>
-          {user && roomCode && (
-            <Box
-              mt={[2, 0]}
-              ml={[0, 6]}
-              alignSelf={["flex-start", "center"]}
-              display="flex"
-              alignItems="center"
-              fontFamily="inherit"
-              fontWeight="bold"
-              fontSize={["md", "lg"]}
-              color="#fff"
-              bg="#222"
-              px={[3, 4]}
-              py={[1, 2]}
-              borderRadius="xl"
-              border="3px solid #fff"
-              as="section"
-              aria-label="Room code section"
-            >
-              <span style={{ marginRight: 8, color: '#ffe600' }}>Room:</span>
-              <span>{roomCode}</span>
-              <Button
-                aria-label={`Copy invite link for room ${roomCode}`}
-                title={`Copy invite link for room ${roomCode}`}
-                onClick={handleCopy}
-                colorScheme="yellow"
-                fontFamily="inherit"
-                fontWeight="bold"
-                border="none"
-                borderRadius="xl"
-                bg="transparent"
-                color="#ffe600"
-                _hover={{ bg: 'transparent', color: '#ff2e63' }}
-                boxShadow="none"
-                size="lg"
-                px={2}
-                ml={2}
-                minW={0}
-                tabIndex={0}
-                _focus={{ boxShadow: '0 0 0 3px #ffe600' }}
-              >
-                <FaCopy />
-              </Button>
-            </Box>
-          )}
-        </Flex>
-      </Box>
-    </header>
+    <Box w="100vw" h="60vh" display="flex" alignItems="center" justifyContent="center" fontFamily="'Luckiest Guy', 'Bangers', cursive'" fontSize="3xl" color="#ffe600" textShadow="-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 2px 8px #000">
+      <span role="img" aria-label="bam">💥</span> BAM! Loading...
+    </Box>
   );
 }
 
@@ -463,50 +393,54 @@ function App() {
     setCurrentRoomCode(roomCode);
   }
 
+  // Dynamically set background color
+  const bgColor = location.pathname === '/' ? '#181825' : '#a259f7';
+
   return (
-    <Box minH="100vh" bg="#181825" fontFamily="'Luckiest Guy', 'Bangers', cursive" py={8}>
+    <Box minH="100vh" display="flex" flexDirection="column" position="relative" fontFamily="'Luckiest Guy', 'Bangers', cursive">
       <AppHeader user={currentUser} roomCode={currentRoomCode} />
-      <AnimatePresenceFM mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={
-            <motionFM.div
-              initial={{ x: '-100vw', opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '100vw', opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.5 }}
-              style={{ minHeight: '80vh' }}
-            >
-              <Landing />
-            </motionFM.div>
-          } />
-          <Route path="/room/:roomCode" element={
-            <motionFM.div
-              initial={{ x: '-100vw', opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: '100vw', opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.5 }}
-              style={{ minHeight: '80vh' }}
-            >
-              <JoinRoomOnly onJoin={handleJoinRoom} />
-            </motionFM.div>
-          } />
-          <Route path="*" element={
-            <motionFM.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.4 }}
-              style={{ minHeight: '80vh' }}
-            >
-              <NotFound />
-            </motionFM.div>
-          } />
-        </Routes>
-      </AnimatePresenceFM>
-      {/* Comic-style footer credit */}
-      <Box as="footer" w="100%" mt={8} py={4} textAlign="center" fontFamily="'Luckiest Guy', 'Bangers', cursive'" fontSize="lg" color="#ffe600" bg="transparent" zIndex={10}>
-        BAM! ZAP! © 2024 Iuma Estabrooks
+      <Box position="relative" zIndex={1} display="flex" flexDirection="column" flex="1 0 auto" minHeight={0}
+        bg={location.pathname.startsWith('/room/') ? '#a259f7' : undefined}
+      >
+        <AnimatePresenceFM mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={
+              <motionFM.div
+                initial={{ x: '-100vw', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100vw', opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.5 }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}
+              >
+                <Landing />
+              </motionFM.div>
+            } />
+            <Route path="/room/:roomCode" element={
+              <motionFM.div
+                initial={{ x: '-100vw', opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: '100vw', opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.5 }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+              >
+                <JoinRoomOnly onJoin={handleJoinRoom} />
+              </motionFM.div>
+            } />
+            <Route path="*" element={
+              <motionFM.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.4 }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+              >
+                <NotFound />
+              </motionFM.div>
+            } />
+          </Routes>
+        </AnimatePresenceFM>
       </Box>
+      <Footer style={{ zIndex: 2, position: 'relative' }} />
     </Box>
   );
 }
@@ -514,11 +448,15 @@ function App() {
 function JoinRoomOnly({ onJoin }) {
   const { roomCode } = useParams();
   const location = useLocation();
-  const [name, setName] = useState('');
+  const params = new URLSearchParams(location.search);
+  const queryName = params.get('name');
+  const [name, setName] = useState(queryName || '');
   const [error, setError] = useState('');
   const [joined, setJoined] = useState(false);
   const [room, setRoom] = useState(null);
   const [socket, setSocket] = useState(null);
+  // New: joining state to prevent join form flash
+  const [joining, setJoining] = useState(!!queryName);
 
   // Persistent userId logic
   function getOrCreateUserId() {
@@ -536,14 +474,11 @@ function JoinRoomOnly({ onJoin }) {
 
   // Get name from query string if present
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const queryName = params.get('name');
-    if (queryName && !joined && !room) {
-      setName(queryName);
+    if (queryName && !joined && !room && joining) {
       handleJoin(null, queryName);
     }
     // eslint-disable-next-line
-  }, [location.search, joined, room]);
+  }, [location.search, joined, room, joining]);
 
   function handleJoin(e, overrideName) {
     if (e) e.preventDefault();
@@ -553,12 +488,14 @@ function JoinRoomOnly({ onJoin }) {
       return;
     }
     setError('');
+    setJoining(true); // Set joining to true while joining
     const sock = getSocket();
     setSocket(sock);
     const userId = getOrCreateUserId();
     sock.emit('join', { userId, name: finalName, roomCode });
     sock.on('room_update', (room) => {
       setRoom({ ...room });
+      setJoining(false); // Done joining
     });
     setJoined(true);
     if (onJoin) onJoin({ name: finalName, roomCode });
@@ -567,7 +504,7 @@ function JoinRoomOnly({ onJoin }) {
   const userId = getOrCreateUserId();
   return (
     <AnimatePresenceFM mode="wait">
-      {(!joined || !room) && (
+      {(!joined || !room) && !joining && (
         <motionFM.div
           key="join-form"
           initial={{ x: 0, opacity: 1 }}
@@ -576,25 +513,25 @@ function JoinRoomOnly({ onJoin }) {
           transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.4 }}
           style={{ position: 'absolute', width: '100%' }}
         >
-          <Suspense fallback={null}>
+          <Suspense fallback={<ComicSuspenseFallback />}>
             <ComicBackground />
           </Suspense>
           <Box
             maxW="400px"
             mx="auto"
             mt={0}
-            p={[2, 4, 8]}
+            p={{ base: 2, md: 4, lg: 8 }}
             borderRadius="2xl"
             border="6px solid #fff"
-            bg="#a259f7"
+            bg="#181825"
             boxShadow="0 8px 32px #0008"
             fontFamily="'Luckiest Guy', 'Bangers', cursive'"
-            color="#181825"
+            color="#fff"
             textAlign="center"
             position="relative"
             zIndex={1}
           >
-            <Heading mb={6} size="lg" color="#00e0ff" fontFamily="inherit" letterSpacing="tight" fontSize={["xl", "2xl"]}>
+            <Heading mb={6} size="lg" color="#00e0ff" fontFamily="inherit" letterSpacing="tight" fontSize={{ base: "xl", md: "2xl" }}>
               Join Room
             </Heading>
             <form onSubmit={handleJoin}>
@@ -607,7 +544,7 @@ function JoinRoomOnly({ onJoin }) {
                   required
                   fontFamily="inherit"
                   fontWeight="bold"
-                  fontSize={["md", "lg"]}
+                  fontSize={{ base: "md", md: "lg" }}
                   bg="#181825"
                   color="#fff"
                   border="4px solid #fff"
@@ -631,7 +568,6 @@ function JoinRoomOnly({ onJoin }) {
                   _hover={{ bg: '#ff2e63', color: '#fff', borderColor: '#fff' }}
                   boxShadow="0 2px 8px #0004"
                   height="56px"
-                  fontSize={["md", "lg"]}
                 >
                   Join Room
                 </Button>
@@ -641,7 +577,21 @@ function JoinRoomOnly({ onJoin }) {
           </Box>
         </motionFM.div>
       )}
-      {(joined && room) && (
+      {joining && (
+        <motionFM.div
+          key="loading"
+          initial={{ x: '60vw', opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 0, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.4 }}
+          style={{ position: 'absolute', width: '100%' }}
+        >
+          <Box display="flex" alignItems="center" justifyContent="center" minH="60vh" color="#ffe600" fontSize="2xl" fontFamily="inherit">
+            Loading room...
+          </Box>
+        </motionFM.div>
+      )}
+      {joined && room && (
         <motionFM.div
           key="room"
           initial={{ x: '60vw', opacity: 0 }}
@@ -650,7 +600,7 @@ function JoinRoomOnly({ onJoin }) {
           transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.4 }}
           style={{ position: 'absolute', width: '100%' }}
         >
-          <Suspense fallback={<div style={{color:'#fff',textAlign:'center'}}>Loading room...</div>}>
+          <Suspense fallback={<ComicSuspenseFallback />}>
             <Box className="card-purple"><Room user={{ name, roomCode, userId }} room={room} socket={socket} /></Box>
           </Suspense>
         </motionFM.div>
@@ -661,11 +611,11 @@ function JoinRoomOnly({ onJoin }) {
 
 function NotFound() {
   return (
-    <Box minH="60vh" display="flex" flexDirection="column" alignItems="center" justifyContent="center" fontFamily="'Luckiest Guy', 'Bangers', cursive'" color="#fff">
+    <Box minH="60vh" display="flex" flexDirection="column" alignItems="center" justifyContent="center" fontFamily="'Luckiest Guy', 'Bangers', cursive'" color="#fff" flex="1">
       <Box fontSize="6xl" mb={2}>
         💥
       </Box>
-      <Heading color="#ff2e63" fontSize={["2xl", "3xl"]} mb={2}>
+      <Heading color="#ff2e63" fontSize={{ base: "2xl", md: "3xl" }} mb={2}>
         404: Page Not Found!
       </Heading>
       <Text color="#00e0ff" fontSize="xl" mb={6}>
@@ -684,7 +634,7 @@ function NotFound() {
         _hover={{ bg: '#ff2e63', color: '#fff', borderColor: '#fff' }}
         boxShadow="0 2px 8px #0004"
         height="56px"
-        fontSize={["md", "lg"]}
+        fontSize={{ base: "md", md: "lg" }}
       >
         Back to Home
       </Button>

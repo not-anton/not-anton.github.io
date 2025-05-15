@@ -5,6 +5,7 @@ import {
 import { FaCopy, FaPaste } from 'react-icons/fa';
 import PlayerCard from '../../components/PlayerCard/PlayerCard.jsx';
 import { useCallback } from 'react';
+import { motion as motionFM, AnimatePresence as AnimatePresenceFM } from 'framer-motion';
 
 const FIBONACCI = [1, 2, 3, 5, 8];
 const PALETTE = ['#00e0ff', '#ffe600', '#ff2e63', '#a259f7', '#aaff00'];
@@ -132,17 +133,17 @@ export default function Room({ user, room, socket }) {
   }
 
   return (
-    <Box maxW={["98vw", null, "1200px"]} w="100%" mx="auto" mt={0} p={[2, 4, 8]} borderRadius="lg" position="relative">
+    <Box maxW={{ base: "98vw", lg: "1200px" }} w="100%" mx="auto" mt={0} p={{ base: 2, md: 4, lg: 8 }} borderRadius="lg" position="relative" flex="1" display="flex" flexDirection="column">
       {/* Story at top */}
       <Box mb={6} position="relative">
         <Heading size="sm" mb={2} color="#00e0ff">Story</Heading>
-        <Box bg="#222" borderRadius="md" p={3} minH="40px" mb={2} fontStyle={!room?.story ? 'italic' : 'normal'} color="#fff" fontSize={["md", null, "lg"]}>
+        <Box bg="#222" borderRadius="md" p={3} minH="40px" mb={2} fontStyle={!room?.story ? 'italic' : 'normal'} color="#fff" fontSize={{ base: "md", lg: "lg" }}>
           {room?.story || 'No story set'}
         </Box>
         {isHost && (
           <VStack align="stretch" spacing={3} mb={2}>
             <form onSubmit={handleSetStory}>
-              <HStack flexDir={["column", "row"]} alignItems="center" spacing={3} w="100%">
+              <HStack flexDir={{ base: "column", md: "row" }} alignItems="center" spacing={3} w="100%">
                 <IconButton
                   aria-label="Paste from clipboard"
                   icon={<FaPaste />}
@@ -185,7 +186,7 @@ export default function Room({ user, room, socket }) {
                   colorScheme="yellow"
                   type="submit"
                   fontFamily="'Luckiest Guy', 'Bangers', cursive'"
-                  w={["100%", "auto"]}
+                  w={{ base: "100%", md: "auto" }}
                   bg="#ffe600"
                   color="#181825"
                   border="4px solid #fff"
@@ -209,10 +210,10 @@ export default function Room({ user, room, socket }) {
                 border="4px solid #fff"
                 fontWeight="bold"
                 fontFamily="inherit"
-                w={["100%", "auto"]}
+                w={{ base: "100%", md: "auto" }}
                 height="48px"
                 minW="120px"
-                className={crack ? 'crack-disappear' : ''}
+                className={crack ? 'crack-disappear comic-pop' : ''}
                 style={{
                   animation: crack ? 'crackDisappear 0.5s cubic-bezier(.68,-0.55,.27,1.55) forwards' : undefined,
                   pointerEvents: crack ? 'none' : undefined
@@ -228,7 +229,7 @@ export default function Room({ user, room, socket }) {
       <Box mb={4} borderBottom="3px solid #fff" />
       <Box mb={6}>
         <Heading size="sm" mb={2} color="#aaff00">Participants</Heading>
-        <SimpleGrid columns={[2, 3, 4, 5]} spacing={4} minChildWidth="140px" w="100%" pt={hasHost ? "2.5em" : undefined}>
+        <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing={4} minChildWidth="140px" w="100%" pt={hasHost ? "2.5em" : undefined}>
           {room && room.users && Object.entries(room.users).map(([id, u]) => (
             <PlayerCard
               key={id}
@@ -276,15 +277,15 @@ export default function Room({ user, room, socket }) {
           ) : (
             <Box w="100%">
               <HStack spacing={3} w="100%">
-                {FIBONACCI.map(val => (
-                  <Button
-                    key={val}
-                    colorScheme="yellow"
-                    variant="solid"
-                    size="lg"
-                    onClick={() => handlePoint(val)}
-                    isDisabled={hasVoted}
-                    className={pop ? 'comic-pop' : ''}
+              {FIBONACCI.map(val => (
+                <Button
+                  key={val}
+                  colorScheme="yellow"
+                  variant="solid"
+                  size="lg"
+                  onClick={() => handlePoint(val)}
+                  isDisabled={hasVoted}
+                  className={pop ? 'comic-pop' : ''}
                     bg="#ffe600"
                     color="#181825"
                     border="4px solid #fff"
@@ -296,172 +297,183 @@ export default function Room({ user, room, socket }) {
                     height="56px"
                     flex={1}
                     fontSize="1.5em"
-                  >
-                    {val}
-                  </Button>
-                ))}
-              </HStack>
+                >
+                  {val}
+                </Button>
+              ))}
+            </HStack>
             </Box>
           )}
         </Box>
       )}
-      {room?.revealed && (
-        <Box mt={8} p={4} borderRadius="md" className={`card-yellow${resultsPop ? ' comic-pop' : ''}`} style={{ position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32 }}>
-          <Box flex={1} minW={0}>
-            <Heading size="sm" mb={2} color="#181825">Results</Heading>
-            {resultsPop && (
-              <Badge className="card-pink" fontSize="1.5em" position="absolute" top={-8} right={-8} zIndex={10} transform="rotate(-12deg)">
-                POW!
-              </Badge>
-            )}
-            {(() => {
-              const points = Object.values(room.users).map(u => u.point).filter(p => typeof p === 'number');
-              const userIds = room && room.users ? Object.keys(room.users) : [];
-              const allLocked = userIds.length && userIds.every(id => room.users[id].hasVoted);
-              const lockInTimes = room && room.lockInTimes ? room.lockInTimes : {};
-              const showResults = room.revealed;
-              if (!showResults) {
-                return (
-                  <Box w="100%" textAlign="center" color="#181825" fontSize="lg" py={6}>
-                    <span role="img" aria-label="hourglass">⏳</span> Waiting for all users to lock in...
-                  </Box>
-                );
-              }
-              const votesCount = points.length;
-              const totalCount = Object.keys(room.users).length;
-              const avg = votesCount ? (points.reduce((a, b) => a + b, 0) / votesCount).toFixed(2) : 'N/A';
-              // Calculate median
-              let median = 'N/A';
-              if (votesCount) {
-                const sorted = [...points].sort((a, b) => a - b);
-                const mid = Math.floor(sorted.length / 2);
-                median = sorted.length % 2 !== 0 ? sorted[mid] : ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(2);
-              }
-              // Calculate majority vote(s)
-              let majority = 'N/A';
-              if (votesCount) {
-                const freq = {};
-                points.forEach(p => { freq[p] = (freq[p] || 0) + 1; });
-                const max = Math.max(...Object.values(freq));
-                const majorities = Object.entries(freq).filter(([_, v]) => v === max).map(([k]) => k);
-                majority = majorities.length === 1 ? majorities[0] : majorities.join(', ');
-              }
-              // Fastest Lock-In logic
-              let fastestBadge = null;
-              if (votesCount > 0 && Object.keys(lockInTimes).length > 0) {
-                let fastestId = null;
-                let fastestTime = Infinity;
-                for (const id of userIds) {
-                  if (lockInTimes[id] < fastestTime && typeof lockInTimes[id] === 'number') {
-                    fastestTime = lockInTimes[id];
-                    fastestId = id;
+      {/* Results area (slide in when revealed) */}
+      <AnimatePresenceFM mode="wait">
+        {room?.revealed && (
+          <motionFM.div
+            key="results-area"
+            initial={{ x: 80, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 120, damping: 18, duration: 0.5 }}
+          >
+            <Box mt={8} p={4} borderRadius="md" className={`card-yellow${resultsPop ? ' comic-pop' : ''}`} style={{ position: 'relative', display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 32 }}>
+              <Box flex={1} minW={0}>
+              <Heading size="sm" mb={2} color="#181825">Results</Heading>
+              {resultsPop && (
+                <Badge className="card-pink" fontSize="1.5em" position="absolute" top={-8} right={-8} zIndex={10} transform="rotate(-12deg)">
+                  POW!
+                </Badge>
+              )}
+                {(() => {
+                  const points = Object.values(room.users).map(u => u.point).filter(p => typeof p === 'number');
+                  const userIds = room && room.users ? Object.keys(room.users) : [];
+                  const allLocked = userIds.length && userIds.every(id => room.users[id].hasVoted);
+                  const lockInTimes = room && room.lockInTimes ? room.lockInTimes : {};
+                  const showResults = room.revealed;
+                  if (!showResults) {
+                    return (
+                      <Box w="100%" textAlign="center" color="#181825" fontSize="lg" py={6}>
+                        <span role="img" aria-label="hourglass">⏳</span> Waiting for all users to lock in...
+                      </Box>
+                    );
                   }
-                }
-                const winner = fastestId && room.users[fastestId] ? room.users[fastestId].name : null;
-                if (winner) {
-                  fastestBadge = (
-                    <Badge
-                      className="card-pink"
-                      fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
-                      px={{ base: 3, sm: 7 }}
-                      py={{ base: 2, sm: 3 }}
-                      borderRadius="xl"
-                      border="4px solid #fff"
-                      boxShadow="0 2px 8px #0004"
-                      minW={0}
-                      w={{ base: '100%', sm: 'auto' }}
-                      textAlign="center"
-                      whiteSpace="normal"
-                      wordBreak="break-word"
+                  const votesCount = points.length;
+                  const totalCount = Object.keys(room.users).length;
+                  const avg = votesCount ? (points.reduce((a, b) => a + b, 0) / votesCount).toFixed(2) : 'N/A';
+                  // Calculate median
+                  let median = 'N/A';
+                  if (votesCount) {
+                    const sorted = [...points].sort((a, b) => a - b);
+                    const mid = Math.floor(sorted.length / 2);
+                    median = sorted.length % 2 !== 0 ? sorted[mid] : ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(2);
+                  }
+                  // Calculate majority vote(s)
+                  let majority = 'N/A';
+                  if (votesCount) {
+                    const freq = {};
+                    points.forEach(p => { freq[p] = (freq[p] || 0) + 1; });
+                    const max = Math.max(...Object.values(freq));
+                    const majorities = Object.entries(freq).filter(([_, v]) => v === max).map(([k]) => k);
+                    majority = majorities.length === 1 ? majorities[0] : majorities.join(', ');
+                  }
+                  // Fastest Lock-In logic
+                  let fastestBadge = null;
+                  if (votesCount > 0 && Object.keys(lockInTimes).length > 0) {
+                    let fastestId = null;
+                    let fastestTime = Infinity;
+                    for (const id of userIds) {
+                      if (lockInTimes[id] < fastestTime && typeof lockInTimes[id] === 'number') {
+                        fastestTime = lockInTimes[id];
+                        fastestId = id;
+                      }
+                    }
+                    const winner = fastestId && room.users[fastestId] ? room.users[fastestId].name : null;
+                    if (winner) {
+                      fastestBadge = (
+                        <Badge
+                          className="card-pink"
+                          fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
+                          px={{ base: 3, sm: 7 }}
+                          py={{ base: 2, sm: 3 }}
+                          borderRadius="xl"
+                          border="4px solid #fff"
+                          boxShadow="0 2px 8px #0004"
+                          minW={0}
+                          w={{ base: '100%', sm: 'auto' }}
+                          textAlign="center"
+                          whiteSpace="normal"
+                          wordBreak="break-word"
+                          display="flex"
+                          alignItems="center"
+                          gap={2}
+                          style={{ opacity: allLocked ? 1 : 0.5, filter: allLocked ? 'none' : 'grayscale(0.7)' }}
+                        >
+                          <span role="img" aria-label="zap">⚡</span> Fastest Lock-In: <b style={{ marginLeft: 6 }}>{winner}</b>
+                          {!allLocked && <span style={{ marginLeft: 8, fontSize: '0.7em', fontStyle: 'italic' }}>(waiting...)</span>}
+                        </Badge>
+                      );
+                    }
+                  }
+                  // Style for in-progress results
+                  const faded = { opacity: 0.5, filter: 'grayscale(0.7)' };
+                  return (
+                    <Box
+                      mt={4}
+                      w="100%"
                       display="flex"
+                      flexDirection={{ base: 'column', sm: 'row' }}
+                      flexWrap="wrap"
                       alignItems="center"
-                      gap={2}
-                      style={{ opacity: allLocked ? 1 : 0.5, filter: allLocked ? 'none' : 'grayscale(0.7)' }}
+                      justifyContent="center"
+                      gap={{ base: 3, sm: 6 }}
                     >
-                      <span role="img" aria-label="zap">⚡</span> Fastest Lock-In: <b style={{ marginLeft: 6 }}>{winner}</b>
-                      {!allLocked && <span style={{ marginLeft: 8, fontSize: '0.7em', fontStyle: 'italic' }}>(waiting...)</span>}
-                    </Badge>
-                  );
-                }
-              }
-              // Style for in-progress results
-              const faded = { opacity: 0.5, filter: 'grayscale(0.7)' };
-              return (
-                <Box
-                  mt={4}
-                  w="100%"
-                  display="flex"
-                  flexDirection={{ base: 'column', sm: 'row' }}
-                  flexWrap="wrap"
-                  alignItems="center"
-                  justifyContent="center"
-                  gap={{ base: 3, sm: 6 }}
-                >
-                  <Badge
-                    className="card-cyan"
-                    fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
-                    px={{ base: 3, sm: 7 }}
-                    py={{ base: 2, sm: 3 }}
-                    borderRadius="xl"
-                    border="4px solid #fff"
-                    boxShadow="0 2px 8px #0004"
-                    minW={0}
-                    w={{ base: '100%', sm: 'auto' }}
-                    textAlign="center"
-                    whiteSpace="normal"
-                    wordBreak="break-word"
-                    style={allLocked ? {} : faded}
-                  >
-                    Avg: {avg} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
-                  </Badge>
-                  <Badge
-                    className="card-pink"
-                    fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
-                    px={{ base: 3, sm: 7 }}
-                    py={{ base: 2, sm: 3 }}
-                    borderRadius="xl"
-                    border="4px solid #fff"
-                    boxShadow="0 2px 8px #0004"
-                    minW={0}
-                    w={{ base: '100%', sm: 'auto' }}
-                    textAlign="center"
-                    whiteSpace="normal"
-                    wordBreak="break-word"
-                    style={allLocked ? {} : faded}
-                  >
-                    Median: {median} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
-                  </Badge>
-                  <Badge
-                    className="card-yellow"
-                    fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
-                    px={{ base: 3, sm: 7 }}
-                    py={{ base: 2, sm: 3 }}
-                    borderRadius="xl"
-                    border="4px solid #fff"
-                    boxShadow="0 2px 8px #0004"
-                    minW={0}
-                    w={{ base: '100%', sm: 'auto' }}
-                    textAlign="center"
-                    whiteSpace="normal"
-                    wordBreak="break-word"
-                    style={allLocked ? {} : faded}
-                  >
-                    Majority: {majority} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
-                  </Badge>
-                  {fastestBadge && (
-                    <Box display={{ base: 'flex', sm: 'block' }} justifyContent="center" w={{ base: '100%', sm: 'auto' }}>
-                      {fastestBadge}
+                      <Badge
+                        className="card-cyan"
+                        fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
+                        px={{ base: 3, sm: 7 }}
+                        py={{ base: 2, sm: 3 }}
+                        borderRadius="xl"
+                        border="4px solid #fff"
+                        boxShadow="0 2px 8px #0004"
+                        minW={0}
+                        w={{ base: '100%', sm: 'auto' }}
+                        textAlign="center"
+                        whiteSpace="normal"
+                        wordBreak="break-word"
+                        style={allLocked ? {} : faded}
+                      >
+                        Avg: {avg} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
+                      </Badge>
+                      <Badge
+                        className="card-pink"
+                        fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
+                        px={{ base: 3, sm: 7 }}
+                        py={{ base: 2, sm: 3 }}
+                        borderRadius="xl"
+                        border="4px solid #fff"
+                        boxShadow="0 2px 8px #0004"
+                        minW={0}
+                        w={{ base: '100%', sm: 'auto' }}
+                        textAlign="center"
+                        whiteSpace="normal"
+                        wordBreak="break-word"
+                        style={allLocked ? {} : faded}
+                      >
+                        Median: {median} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
+                      </Badge>
+                      <Badge
+                        className="card-yellow"
+                        fontSize={{ base: '1em', sm: '1.4em', md: '1.7em' }}
+                        px={{ base: 3, sm: 7 }}
+                        py={{ base: 2, sm: 3 }}
+                        borderRadius="xl"
+                        border="4px solid #fff"
+                        boxShadow="0 2px 8px #0004"
+                        minW={0}
+                        w={{ base: '100%', sm: 'auto' }}
+                        textAlign="center"
+                        whiteSpace="normal"
+                        wordBreak="break-word"
+                        style={allLocked ? {} : faded}
+                      >
+                        Majority: {majority} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
+                      </Badge>
+                      {fastestBadge && (
+                        <Box display={{ base: 'flex', sm: 'block' }} justifyContent="center" w={{ base: '100%', sm: 'auto' }}>
+                          {fastestBadge}
+                        </Box>
+                      )}
                     </Box>
-                  )}
-                </Box>
-              );
-            })()}
-          </Box>
-        </Box>
-      )}
+                  );
+                })()}
+              </Box>
+            </Box>
+          </motionFM.div>
+        )}
+      </AnimatePresenceFM>
     </Box>
   );
-}
+} 
 
 <style>{`
 @keyframes comicPop {

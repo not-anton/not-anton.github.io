@@ -32,8 +32,11 @@ body {
   color: #f8f8f8;
 }
 
-html, #root {
+html, body, #root {
   min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #181825;
 }
 

@@ -157,7 +157,7 @@ export default function ComicBackground() {
   }, [shapes]);
 
   return (
-    <Box position="fixed" top={0} left={0} w="100vw" h="100vh" zIndex={0} pointerEvents="none">
+    <Box position="absolute" top={0} left={0} w="100vw" h="100%" zIndex={0} pointerEvents="none">
       {/* Halftone overlay */}
       <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.12 }} aria-hidden="true">
         <defs>
@@ -168,7 +168,7 @@ export default function ComicBackground() {
         <rect width="100%" height="100%" fill="url(#halftone)" />
       </svg>
       {/* Action lines */}
-      <svg width="100vw" height="100vh" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.10 }} aria-hidden="true">
+      <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, zIndex: 0, opacity: 0.10 }} aria-hidden="true">
         {[...Array(12)].map((_, i) => (
           <line
             key={i}
