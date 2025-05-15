@@ -1,8 +1,8 @@
 # Point-Less
 
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC--BY--NC%204.0-lightgrey.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-# Story Expedition
+# Point-Less
 
 A real-time, in-memory story-pointing app for agile teams.
 
@@ -49,10 +49,10 @@ Contributions are welcome! Please open an issue or pull request. For major chang
 
 Point-Less does not collect or store any personal data. All story-pointing sessions are in-memory and are not persisted. For questions, contact [hello@point-less.work](mailto:hello@point-less.work).
 
-## Terms of Use
+## License
 
-Point-Less is provided as-is for non-commercial use only. By using this app, you agree not to use it for commercial purposes without a commercial license. See LICENSE for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-© 2024 Iuma Estabrooks. All non-commercial use permitted under CC BY-NC 4.0. For commercial licensing, contact hello@point-less.work.
+© 2025 Iuma Estabrooks.

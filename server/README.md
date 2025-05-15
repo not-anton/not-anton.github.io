@@ -47,4 +47,4 @@ This backend does not collect or store any personal data. All sessions are in-me
 
 ## Terms of Use
 
-This project is provided as-is for non-commercial use only. By using this app, you agree not to use it for commercial purposes without a commercial license. See LICENSE for details. 
+- This project is licensed under the MIT License. See the [LICENSE](../LICENSE) file for details. 
