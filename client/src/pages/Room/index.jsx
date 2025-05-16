@@ -1,20 +1,37 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Box, Heading, VStack, HStack, Text, Button, List, ListItem, Badge, SimpleGrid, Menu, MenuButton, MenuList, MenuItem, InputGroup, InputLeftElement, Input, IconButton
+  Box, Heading, VStack, HStack, Text, Button, List, ListItem, Badge, SimpleGrid, Menu, MenuButton, MenuList, MenuItem, InputGroup, InputLeftElement, Input, IconButton, Tooltip
 } from '@chakra-ui/react';
 import { FaCopy, FaPaste } from 'react-icons/fa';
-import PlayerCard from '../../components/PlayerCard/PlayerCard.jsx';
+import PlayerCard from '../../components/PlayerCard';
 import { useCallback } from 'react';
 import { motion as motionFM, AnimatePresence as AnimatePresenceFM } from 'framer-motion';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { getSocket } from '../../utils/socket.js';
 
 const FIBONACCI = [1, 2, 3, 5, 8];
 const PALETTE = ['#00e0ff', '#ffe600', '#ff2e63', '#a259f7', '#aaff00'];
 
-export default function Room({ user, room, socket }) {
+export default function Room() {
+  const { roomCode } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const name = params.get('name') || '';
+  // Redirect to join page if no name
+  if (!name) {
+    navigate(`/join/${roomCode}`);
+    return null;
+  }
+  const [room, setRoom] = useState(null);
+  const [user, setUser] = useState(null);
+  const [socket, setSocket] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [storyInput, setStoryInput] = useState('');
   const [pop, setPop] = useState(false);
   const [resultsPop, setResultsPop] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedInvite, setCopiedInvite] = useState(false);
   const isHost = room?.users && room.users[user.userId]?.isHost;
   const hasVoted = room?.users && room.users[user.userId]?.hasVoted;
   const myPoint = room?.users && room.users[user.userId]?.point;
@@ -37,6 +54,37 @@ export default function Room({ user, room, socket }) {
 
   // Determine if there is a host in the room
   const hasHost = room && room.users && Object.values(room.users).some(u => u.isHost);
+
+  // Persistent userId logic
+  function getOrCreateUserId() {
+    let userId = localStorage.getItem('userId');
+    if (!userId) {
+      if (window.crypto && window.crypto.randomUUID) {
+        userId = window.crypto.randomUUID();
+      } else {
+        userId = Math.random().toString(36).substr(2, 12);
+      }
+      localStorage.setItem('userId', userId);
+    }
+    return userId;
+  }
+
+  useEffect(() => {
+    const userId = getOrCreateUserId();
+    const sock = getSocket();
+    setSocket(sock);
+    sock.emit('join', { userId, name, roomCode });
+    const handleRoomUpdate = (roomData) => {
+      setRoom({ ...roomData });
+      setUser({ userId, name, roomCode });
+      setLoading(false);
+    };
+    sock.on('room_update', handleRoomUpdate);
+    return () => {
+      sock.off('room_update', handleRoomUpdate);
+    };
+    // eslint-disable-next-line
+  }, [roomCode, name]);
 
   useEffect(() => {
     if (hasVoted) {
@@ -123,11 +171,10 @@ export default function Room({ user, room, socket }) {
     }
   }
 
-  // Defensive: If user is not in room, show message
-  if (!room.users || !room.users[user.userId]) {
+  if (loading || !room) {
     return (
-      <Box w="100vw" h="100vh" display="flex" alignItems="center" justifyContent="center" fontSize="xl" color="red">
-        You are not in this room. Please rejoin from the landing page.
+      <Box w="100vw" h="100vh" display="flex" alignItems="center" justifyContent="center" fontSize="2xl" color="#ffe600" fontFamily="'Luckiest Guy', 'Bangers', cursive'">
+        Loading room...
       </Box>
     );
   }
@@ -136,7 +183,31 @@ export default function Room({ user, room, socket }) {
     <Box maxW={{ base: "98vw", lg: "1200px" }} w="100%" mx="auto" mt={0} p={{ base: 2, md: 4, lg: 8 }} borderRadius="lg" position="relative" flex="1" display="flex" flexDirection="column">
       {/* Story at top */}
       <Box mb={6} position="relative">
-        <Heading size="sm" mb={2} color="#00e0ff">Story</Heading>
+        <HStack justify="space-between" align="center" mb={2}>
+          <Heading size="sm" color="#00e0ff">Story</Heading>
+          <Tooltip label={copiedInvite ? 'Copied!' : 'Copy invite link'} closeOnClick={false} isOpen={copiedInvite}>
+            <Button
+              leftIcon={<FaCopy />}
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.origin + '/join/' + user.roomCode);
+                setCopiedInvite(true);
+                setTimeout(() => setCopiedInvite(false), 1200);
+              }}
+              colorScheme="yellow"
+              borderRadius={16}
+              bg="#ffe600"
+              color="#181825"
+              border="4px solid #fff"
+              _hover={{ bg: '#ff2e63', color: '#fff', borderColor: '#fff' }}
+              fontSize="1.1em"
+              height="40px"
+              minW="40px"
+              ml={2}
+            >
+              {user.roomCode}
+            </Button>
+          </Tooltip>
+        </HStack>
         <Box bg="#222" borderRadius="md" p={3} minH="40px" mb={2} fontStyle={!room?.story ? 'italic' : 'normal'} color="#fff" fontSize={{ base: "md", lg: "lg" }}>
           {room?.story || 'No story set'}
         </Box>

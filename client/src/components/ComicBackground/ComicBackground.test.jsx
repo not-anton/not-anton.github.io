@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ComicBackground from './ComicBackground.jsx';
+import ComicBackground from './';
 
 describe('ComicBackground', () => {
   it('renders SVG shapes', () => {

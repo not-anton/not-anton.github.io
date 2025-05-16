@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import PlayerCard from './PlayerCard.jsx';
+import PlayerCard from './';
 
 describe('PlayerCard', () => {
   it('shows the player name by default', () => {

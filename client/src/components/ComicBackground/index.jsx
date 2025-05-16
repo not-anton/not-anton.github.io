@@ -12,17 +12,26 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function generateShapes(mainBox = { x: 0.5, y: 0.5, w: 350, h: 340 }, count = 6) {
+function getMainBox() {
   const screenW = window.innerWidth;
   const screenH = window.innerHeight;
-  const isMobile = screenW < 600;
-  const margin = 32;
-  const boxPx = {
-    x: screenW / 2 - mainBox.w / 2,
-    y: screenH / 2 - mainBox.h / 2,
-    w: mainBox.w,
-    h: mainBox.h,
+  // Match the card's offset and size (mt: 120px/140px, maxW: 400px, h: ~340px)
+  const cardW = 400;
+  const cardH = 340;
+  const cardY = screenW < 768 ? 120 : 140; // base: 120px, md: 140px
+  return {
+    x: screenW / 2 - cardW / 2,
+    y: cardY,
+    w: cardW,
+    h: cardH,
   };
+}
+
+function generateShapes(mainBox = getMainBox(), count = 6) {
+  const screenW = window.innerWidth;
+  const screenH = window.innerHeight;
+  const margin = 32;
+  const boxPx = mainBox;
   // Title card area (centered at top)
   const titlePad = 24;
   const titleCard = {
@@ -33,11 +42,11 @@ function generateShapes(mainBox = { x: 0.5, y: 0.5, w: 350, h: 340 }, count = 6)
   };
   // 1. Pre-generate all shapes (random type, size, rotation)
   let candidates = [];
-  const shapeCount = isMobile ? 3 : count;
+  const shapeCount = screenW < 600 ? 3 : count;
   for (let i = 0; i < shapeCount * 2; ++i) { // generate extra for fallback
     const type = pick(SHAPE_TYPES);
     const color = pick(PALETTE);
-    let size = isMobile ? randomBetween(50, 90) : randomBetween(70, 160);
+    let size = screenW < 600 ? randomBetween(50, 90) : randomBetween(70, 160);
     let rotation = randomBetween(-15, 15);
     candidates.push({ type, color, size, rotation });
   }
@@ -137,7 +146,7 @@ export default function ComicBackground() {
       const { w: lastW, h: lastH } = lastDims.current;
       const significant = Math.abs(w - lastW) > lastW * 0.1 || Math.abs(h - lastH) > lastH * 0.1;
       // Get exclusion zones
-      const mainBox = { x: w / 2 - 350 / 2, y: h / 2 - 340 / 2, w: 350, h: 340 };
+      const mainBox = getMainBox();
       const titlePad = 24;
       const titleCard = { x: w / 2 - 175, y: 0 + titlePad, w: 350, h: 80 + titlePad * 2 };
       // Check if any shape overlaps
