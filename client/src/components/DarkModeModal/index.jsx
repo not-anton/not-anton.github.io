@@ -85,7 +85,7 @@ export default function DarkModeModal({ buttonProps = {} }) {
                   }}
                 />
               </Box>
-              {tries >= 3 && (
+              {tries >= 2 && (
                 <Text
                   mt={4}
                   color="#ffe600"

@@ -272,9 +272,28 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
           {name}
         </Text>
         {showLocked && (
-          <Text mt={2} fontFamily="inherit" fontWeight="bold" fontSize="xl" color="#181825" textAlign="center">
-            LOCKED IN
-          </Text>
+          <Box mt={2} display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+            <div className="lock-icon">
+              <svg 
+                width="48" 
+                height="48" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                aria-label="Locked"
+              >
+                <path 
+                  d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM9 6C9 4.34 10.34 3 12 3C13.66 3 15 4.34 15 6V8H9V6ZM18 20H6V10H18V20ZM12 17C13.1 17 14 16.1 14 15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15C10 16.1 10.9 17 12 17Z" 
+                  fill="#181825"
+                  stroke="#181825"
+                  strokeWidth="0.5"
+                />
+              </svg>
+            </div>
+            <Text mt={2} fontFamily="inherit" fontWeight="bold" fontSize="xl" color="#181825" textAlign="center">
+              LOCKED IN
+            </Text>
+          </Box>
         )}
       </Box>
       {/* Back side (Point) */}
@@ -315,6 +334,31 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
           40% { transform: scaleY(1.2) scaleX(0.95); }
           70% { transform: scaleY(0.95) scaleX(1.05); }
           100% { transform: scaleY(1) scaleX(1); }
+        }
+
+        .lock-icon {
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+          animation: lockSettle 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          transform-origin: center center;
+        }
+
+        @keyframes lockSettle {
+          0% { 
+            transform: scale(0.8) rotate(-15deg);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+          }
+          40% { 
+            transform: scale(1.2) rotate(8deg);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+          }
+          70% { 
+            transform: scale(0.95) rotate(-4deg);
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+          }
+          100% { 
+            transform: scale(1) rotate(0deg);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+          }
         }
       `}</style>
     </MotionBox>
