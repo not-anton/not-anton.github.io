@@ -1,8 +1,11 @@
 import { Box, Text, IconButton, Tooltip } from '@chakra-ui/react';
 import { FaCrown } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
-export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, point, showTransfer, onTransfer, socketId, poof }) {
+const MotionBox = motion(Box);
+
+export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, point, showTransfer, onTransfer, socketId, poof, results }) {
   // Card flip logic:
   // - If user has voted and not allLocked: flip to show 'LOCKED IN'
   // - If allLocked: flip back to show name and point
@@ -11,6 +14,7 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
   // Animation state for pop
   const [pop, setPop] = useState(false);
   const [justMounted, setJustMounted] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
   useEffect(() => {
     // Delay the squash-and-stretch animation so fade-in can finish
     const delay = setTimeout(() => {
@@ -27,6 +31,13 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
       return () => clearTimeout(t);
     }
   }, [showLocked, showPoint]);
+  useEffect(() => {
+    if (showPoint) {
+      setIsFlipped(true);
+    } else {
+      setIsFlipped(false);
+    }
+  }, [showPoint]);
   if (poof) {
     return (
       <Box
@@ -150,151 +161,147 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
     );
   }
   return (
-    <>
+    <MotionBox
+      w="140px"
+      h="180px"
+      bg={color}
+      border={results ? '8px solid #fff' : '5px solid #fff'}
+      borderRadius="2xl"
+      boxShadow="0 4px 16px #0004"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      fontFamily="'Luckiest Guy', 'Bangers', cursive"
+      fontWeight="bold"
+      fontSize="xl"
+      color="#181825"
+      position="relative"
+      tabIndex={0}
+      style={{
+        perspective: '1000px',
+        transition: 'box-shadow 0.3s, border-color 0.3s, border-width 0.3s',
+        boxShadow: showLocked ? '0 0 24px 6px #ffe600, 0 4px 16px #0004' : '0 4px 16px #0004',
+        borderColor: showLocked ? '#ffe600' : '#fff',
+        animation: justMounted ? 'cardPop 0.38s cubic-bezier(.68,-0.55,.27,1.55)' : undefined,
+        transformStyle: 'preserve-3d',
+      }}
+      _hover={{
+        boxShadow: '0 0 32px 8px #a259f7, 0 4px 16px #0004',
+        borderColor: '#a259f7',
+        zIndex: 10,
+        transform: 'scale(1.04) rotate(-2deg)',
+        transition: 'all 0.18s cubic-bezier(.68,-0.55,.27,1.55)',
+      }}
+      _focus={{
+        boxShadow: '0 0 32px 8px #ffe600, 0 4px 16px #0004',
+        borderColor: '#ffe600',
+        zIndex: 10,
+        outline: 'none',
+        transform: 'scale(1.04) rotate(2deg)',
+        transition: 'all 0.18s cubic-bezier(.68,-0.55,.27,1.55)',
+      }}
+      animate={{
+        rotateY: isFlipped ? [0, 720, 180] : 0
+      }}
+      transition={{
+        duration: isFlipped ? 1.6 : 1,
+        times: isFlipped ? [0, 0.8, 1] : undefined,
+        ease: 'easeInOut',
+      }}
+    >
+      {/* Host crown icon in top-right corner if host */}
+      {isHost && (
+        <Box
+          position="absolute"
+          top={-30}
+          left="50%"
+          transform="translateX(-50%)"
+          zIndex={3}
+          bg="transparent"
+        >
+          <FaCrown
+            style={{
+              fontSize: '2.7em',
+              color: '#ffe600',
+              textShadow: '2px 2px 0 #fff, 0 0 6px #181825',
+              filter: 'drop-shadow(0 2px 4px #0008)',
+              transform: pop ? 'scale(1.18) rotate(-8deg)' : 'rotate(-8deg)',
+              transition: 'transform 0.25s cubic-bezier(.5,1.8,.5,1)'
+            }}
+            title="Host"
+            aria-label="Host crown"
+          />
+        </Box>
+      )}
+      {/* Transfer host button (for host, on other users) */}
+      {showTransfer && (
+        <Tooltip label="Make host" hasArrow>
+          <IconButton
+            icon={<FaCrown />}
+            aria-label="Transfer host"
+            size="xs"
+            colorScheme="yellow"
+            position="absolute"
+            top={2}
+            left={2}
+            borderRadius="full"
+            onClick={() => onTransfer(socketId)}
+            zIndex={3}
+          />
+        </Tooltip>
+      )}
+      {/* Card flip sides */}
+      {/* Front side */}
       <Box
-        w="140px"
-        h="180px"
-        bg={color}
-        border="5px solid #fff"
-        borderRadius="2xl"
-        boxShadow="0 4px 16px #0004"
+        position="absolute"
+        top={0}
+        left={0}
+        w="100%"
+        h="100%"
         display="flex"
         flexDirection="column"
         alignItems="center"
         justifyContent="center"
-        fontFamily="'Luckiest Guy', 'Bangers', cursive"
-        fontWeight="bold"
-        fontSize="xl"
-        color="#181825"
-        position="relative"
         style={{
-          perspective: '600px',
-          transition: 'box-shadow 0.3s, border-color 0.3s',
-          boxShadow: showLocked ? '0 0 24px 6px #ffe600, 0 4px 16px #0004' : '0 4px 16px #0004',
-          borderColor: showLocked ? '#ffe600' : '#fff',
-          animation: justMounted ? 'cardPop 0.38s cubic-bezier(.68,-0.55,.27,1.55)' : undefined,
+          backfaceVisibility: 'hidden',
+          zIndex: isFlipped ? 1 : 2,
         }}
       >
-        {/* Host crown icon in top-right corner if host */}
-        {isHost && (
-          <Box
-            position="absolute"
-            top={-30}
-            left="50%"
-            transform="translateX(-50%)"
-            zIndex={3}
-            bg="transparent"
-          >
-            <FaCrown
-              style={{
-                fontSize: '2.7em',
-                color: '#ffe600',
-                textShadow: '2px 2px 0 #fff, 0 0 6px #181825',
-                filter: 'drop-shadow(0 2px 4px #0008)',
-                transform: pop ? 'scale(1.18) rotate(-8deg)' : 'rotate(-8deg)',
-                transition: 'transform 0.25s cubic-bezier(.5,1.8,.5,1)'
-              }}
-              title="Host"
-              aria-label="Host crown"
-            />
-          </Box>
+        <Text fontFamily="inherit" fontWeight="bold" fontSize="2xl" color="#181825" textAlign="center" px={2}>
+          {name}
+        </Text>
+        {showLocked && (
+          <Text mt={2} fontFamily="inherit" fontWeight="bold" fontSize="xl" color="#181825" textAlign="center">
+            LOCKED IN
+          </Text>
         )}
-        {/* Transfer host button (for host, on other users) */}
-        {showTransfer && (
-          <Tooltip label="Make host" hasArrow>
-            <IconButton
-              icon={<FaCrown />}
-              aria-label="Transfer host"
-              size="xs"
-              colorScheme="yellow"
-              position="absolute"
-              top={2}
-              left={2}
-              borderRadius="full"
-              onClick={() => onTransfer(socketId)}
-              zIndex={3}
-            />
-          </Tooltip>
+      </Box>
+      {/* Back side (Point) */}
+      <Box
+        position="absolute"
+        top={0}
+        left={0}
+        w="100%"
+        h="100%"
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        style={{
+          backfaceVisibility: 'hidden',
+          transform: 'rotateY(180deg)',
+          zIndex: isFlipped ? 2 : 1,
+        }}
+      >
+        <Text fontFamily="inherit" fontWeight="bold" fontSize="2xl" color="#181825" textAlign="center" px={2}>
+          {name}
+        </Text>
+        {showPoint && (
+          <Text mt={2} fontFamily="inherit" fontWeight="bold" fontSize="3xl" color="#181825" textAlign="center">
+            {point}
+          </Text>
         )}
-        {/* Card flip sides */}
-        <Box
-          w="100%"
-          h="100%"
-          position="relative"
-          style={{
-            perspective: '600px',
-          }}
-        >
-          {/* Front side */}
-          <Box
-            position="absolute"
-            top={0}
-            left={0}
-            w="100%"
-            h="100%"
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            style={{
-              backfaceVisibility: 'hidden',
-              transition: 'transform 0.6s cubic-bezier(.5,1.8,.5,1)',
-              transform: showLocked ? 'rotateY(180deg)' : 'rotateY(0deg)',
-              zIndex: showLocked ? 1 : 2,
-            }}
-          >
-            <Text fontFamily="inherit" fontWeight="bold" fontSize="2xl" color="#181825" textAlign="center" px={2}>
-              {name}
-            </Text>
-            {showPoint && (
-              <Text mt={2} fontFamily="inherit" fontWeight="bold" fontSize="3xl" color="#181825" textAlign="center">
-                {point}
-              </Text>
-            )}
-          </Box>
-          {/* Back side (LOCKED IN) */}
-          <Box
-            position="absolute"
-            top={0}
-            left={0}
-            w="100%"
-            h="100%"
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            style={{
-              backfaceVisibility: 'hidden',
-              transition: 'transform 0.6s cubic-bezier(.5,1.8,.5,1)',
-              transform: showLocked ? 'rotateY(0deg)' : 'rotateY(180deg)',
-              zIndex: showLocked ? 2 : 1,
-            }}
-          >
-            <Text fontFamily="inherit" fontWeight="bold" fontSize="2xl" color="#fff" textAlign="center" px={2} mb={2}>
-              {name}
-            </Text>
-            <Box
-              color="#fff"
-              fontFamily="inherit"
-              fontWeight="bold"
-              fontSize="xl"
-              bg="#181825"
-              px={3}
-              py={1}
-              borderRadius="xl"
-              border="2px solid #fff"
-              boxShadow="0 2px 8px #0004"
-              zIndex={3}
-              style={{
-                transition: 'opacity 0.3s',
-                opacity: 1,
-                animation: pop ? 'markerPop 0.18s cubic-bezier(.68,-0.55,.27,1.55)' : undefined,
-              }}
-            >
-              LOCKED IN
-            </Box>
-          </Box>
-        </Box>
       </Box>
       <style>{`
         @keyframes markerPop {
@@ -310,6 +317,6 @@ export default function PlayerCard({ name, isHost, hasVoted, allLocked, color, p
           100% { transform: scaleY(1) scaleX(1); }
         }
       `}</style>
-    </>
+    </MotionBox>
   );
 } 
