@@ -7,7 +7,15 @@ const FIBONACCI = [1, 2, 3, 5, 8];
 export default function PointingSection({ room, hasVoted, myPoint, handlePoint, pop }) {
   if (!room?.pointingActive) return null;
   return (
-    <Box mb={6} bg="#00e0ff" p={4} borderRadius="lg">
+    <Box 
+      mt={8}
+      mb={8}
+      bg="#00e0ff" 
+      p={4} 
+      borderRadius="lg"
+      border="4px solid #fff"
+      boxShadow="0 4px 16px #0004"
+    >
       <HStack justify="space-between" align="center" mb={2}>
         <Heading size="sm" color="#181825" mb={0}>Pointing</Heading>
         <Text color="#181825" fontWeight="bold" fontSize="md" ml={4} whiteSpace="nowrap">
