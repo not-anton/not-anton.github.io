@@ -1,6 +1,6 @@
 import React from 'react';
-import { IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Box, Text } from '@chakra-ui/react';
-import { FaInfoCircle } from 'react-icons/fa';
+import { IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Box, Text, Link, Divider, Stack, HStack, List, ListItem, ListIcon } from '@chakra-ui/react';
+import { FaInfoCircle, FaGithub, FaUser, FaLock } from 'react-icons/fa';
 
 export default function AboutModal({ buttonProps = {} }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -25,7 +25,7 @@ export default function AboutModal({ buttonProps = {} }) {
           borderRadius="2xl"
           boxShadow="0 8px 32px #0008"
           fontFamily="'Luckiest Guy', 'Bangers', cursive"
-          maxW="340px"
+          maxW="420px"
           p={0}
           style={{ animation: 'pop 0.3s cubic-bezier(.5,1.8,.5,1)'}}
         >
@@ -33,18 +33,57 @@ export default function AboutModal({ buttonProps = {} }) {
             About Point-Less
           </ModalHeader>
           <ModalCloseButton color="#fff" top={2} right={2} fontSize="lg" _hover={{ color: '#ff2e63' }} />
-          <ModalBody px={8} py={8}>
-            <Box w="100%" display="flex" alignItems="center" justifyContent="center" flexDirection="column">
-              <Text fontFamily="inherit" fontWeight="bold" color="#00e0ff" fontSize="xl" mb={2}>
-                The most pointless way to point stories!
+          <ModalBody px={8} py={6}>
+            <Stack spacing={4} align="center" w="100%">
+              {/* Made by section */}
+              <Box w="100%" textAlign="center">
+                <HStack justify="center" spacing={2} mb={1}>
+                  <FaUser color="#ffe600" />
+                  <Text fontSize="sm" color="#ffe600" fontWeight="bold">
+                    Made by <Link href="https://github.com/not-anton" color="#a259f7" isExternal>Iuma Estabrooks</Link> &amp; ChatGPT (AI)
+                  </Text>
+                </HStack>
+              </Box>
+              <Divider borderColor="#333" />
+              {/* App name and tagline */}
+              <Box textAlign="center">
+                <Text fontSize="xl" color="#00e0ff" fontWeight="bold" mb={1}>
+                  Point-Less
+                </Text>
+                <Text fontSize="md" color="#fff" fontFamily="inherit" mb={1}>
+                  Point less, code more!
+                </Text>
+                <Text fontSize="sm" color="#a259f7" fontFamily="inherit">
+                  Made for teams who want to have a little fun while they point.
+                </Text>
+              </Box>
+              {/* Links */}
+              <HStack spacing={4} justify="center" mt={2}>
+                <Link href="https://github.com/not-anton/not-anton.github.io" color="#a259f7" isExternal display="flex" alignItems="center">
+                  <FaGithub style={{ marginRight: 6 }} /> GitHub
+                </Link>
+                <Link href="/privacy.html" color="#a259f7" isExternal display="flex" alignItems="center">
+                  <FaLock style={{ marginRight: 6 }} /> Privacy Policy
+                </Link>
+              </HStack>
+              <Divider borderColor="#333" />
+              {/* Privacy summary */}
+              <Box w="100%" textAlign="left">
+                <Text fontSize="sm" color="#ffe600" fontWeight="bold" mb={1}>
+                  Privacy at a Glance
+                </Text>
+                <List spacing={1} fontSize="xs" color="#bbb" pl={2}>
+                  <ListItem><ListIcon as={FaLock} color="#ffe600" />No personal data collected or stored</ListItem>
+                  <ListItem><ListIcon as={FaLock} color="#ffe600" />No tracking or analytics</ListItem>
+                  <ListItem><ListIcon as={FaLock} color="#ffe600" />Room data is temporary and private</ListItem>
+                </List>
+              </Box>
+              <Divider borderColor="#333" />
+              {/* Copyright */}
+              <Text fontSize="xs" color="#888" textAlign="center" mt={2}>
+                © {new Date().getFullYear()} Iuma Estabrooks. All rights reserved.
               </Text>
-              <Text fontFamily="inherit" color="#fff" fontSize="md" textAlign="center" mb={4}>
-                Point-Less is a playful, comic-inspired story-pointing app for agile teams. Join a room, paste your story, and point with friends—no stress, just fun! 
-              </Text>
-              <Text fontFamily="inherit" color="#a259f7" fontSize="md" textAlign="center">
-                Made for teams who want to point less, and play more.
-              </Text>
-            </Box>
+            </Stack>
           </ModalBody>
         </ModalContent>
       </Modal>
