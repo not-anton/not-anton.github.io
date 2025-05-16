@@ -118,7 +118,7 @@ input:focus, .chakra-input:focus {
 
 .card-cyan { background: #00e0ff !important; }
 .card-pink { background: #ff2e63 !important; }
-.card-yellow { background: #ffe600 !important; }
+.card-yellow { background: #ffe600; border: 5px solid #fff; border-radius: 24px; padding-bottom: 2.5rem; }
 .card-purple { background: #a259f7 !important; }
 .card-lime { background: #aaff00 !important; }
 

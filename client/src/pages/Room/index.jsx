@@ -477,6 +477,7 @@ export default function Room() {
                       alignItems="center"
                       justifyContent="center"
                       gap={{ base: 3, sm: 6 }}
+                      mb={6}
                     >
                       <Badge
                         className="card-cyan"
