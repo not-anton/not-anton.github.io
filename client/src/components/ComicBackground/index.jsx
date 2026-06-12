@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const PALETTE = ['#00e0ff', '#ffe600', '#ff2e63', '#a259f7', '#aaff00'];
 const SHAPE_TYPES = ['circle', 'triangle', 'diamond', 'rectangle'];
@@ -14,7 +14,6 @@ function pick(arr) {
 
 function getMainBox() {
   const screenW = window.innerWidth;
-  const screenH = window.innerHeight;
   // Match the card's offset and size (mt: 120px/140px, maxW: 400px, h: ~340px)
   const cardW = 400;
   const cardH = 340;
