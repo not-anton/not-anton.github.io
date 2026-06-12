@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Box, Heading, Input, Button, VStack, Text } from '@chakra-ui/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ComicBackground from '../../components/ComicBackground';
@@ -31,7 +31,7 @@ export default function JoinRoomPage() {
         border="6px solid #fff"
         bg="#181825"
         boxShadow="0 8px 32px #0008"
-        fontFamily="'Luckiest Guy', 'Bangers', cursive'"
+        fontFamily="'Luckiest Guy', 'Bangers', cursive"
         color="#fff"
         textAlign="center"
         position="relative"
