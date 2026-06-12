@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import './DarkModeModal';
+import DarkModeModal from './';
 
 describe('DarkModeModal', () => {
   it('opens the modal when the icon button is clicked', () => {

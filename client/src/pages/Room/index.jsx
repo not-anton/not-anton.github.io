@@ -1,17 +1,35 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+﻿import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Box, Heading, VStack, HStack, Text, Button, List, ListItem, Badge, SimpleGrid, Menu, MenuButton, MenuList, MenuItem, InputGroup, InputLeftElement, Input, IconButton, Tooltip
+  Box, Heading, VStack, HStack, Text, Button, Badge, SimpleGrid, Input, IconButton, Tooltip
 } from '@chakra-ui/react';
-import { FaCopy, FaPaste } from 'react-icons/fa';
+import { FaCopy, FaPaste, FaCrown } from 'react-icons/fa';
+import { createPortal } from 'react-dom';
 import PlayerCard from '../../components/PlayerCard';
-import { useCallback } from 'react';
-import { motion as motionFM, AnimatePresence as AnimatePresenceFM } from 'framer-motion';
+import { motion as Motion, AnimatePresence as AnimatePresenceFM } from 'framer-motion';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { getSocket } from '../../utils/socket.js';
 import PointingSection from './PointingSection';
 
-const FIBONACCI = [1, 2, 3, 5, 8];
 const PALETTE = ['#00e0ff', '#ffe600', '#ff2e63', '#a259f7', '#aaff00'];
+
+// Persistent userId logic
+function getOrCreateUserId() {
+  let userId = localStorage.getItem('userId');
+  if (!userId) {
+    if (window.crypto && window.crypto.randomUUID) {
+      userId = window.crypto.randomUUID();
+    } else {
+      userId = Math.random().toString(36).substr(2, 12);
+    }
+    localStorage.setItem('userId', userId);
+  }
+  return userId;
+}
+
+// Helper: sanitize input (strip HTML tags)
+function sanitize(str) {
+  return String(str).replace(/<[^>]*>?/gm, '');
+}
 
 export default function Room() {
   const { roomCode } = useParams();
@@ -19,73 +37,102 @@ export default function Room() {
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const name = params.get('name') || '';
-  // Redirect to join page if no name
-  if (!name) {
-    navigate(`/join/${roomCode}`);
-    return null;
-  }
+  const userId = useMemo(getOrCreateUserId, []);
   const [room, setRoom] = useState(null);
-  const [user, setUser] = useState(null);
   const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [connected, setConnected] = useState(true);
   const [storyInput, setStoryInput] = useState('');
   const [pop, setPop] = useState(false);
   const [resultsPop, setResultsPop] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
-  const isHost = room?.users && room.users[user.userId]?.isHost;
-  const hasVoted = room?.users && room.users[user.userId]?.hasVoted;
-  const myPoint = room?.users && room.users[user.userId]?.point;
-  const [startPop, setStartPop] = useState(false);
-  const prevPointingActive = useRef(room?.pointingActive);
   const [crack, setCrack] = useState(false);
-  const [poofedUsers, setPoofedUsers] = useState([]);
-  const prevUsersRef = useRef(Object.keys(room?.users || {}));
+  const [poofedUsers, setPoofedUsers] = useState([]); // [{ id, name, booted, rect, color }]
+  const prevUsersRef = useRef({}); // id -> name
+  const kickedRef = useRef(new Set()); // userIds whose departure was a kick
+  const cardRectsRef = useRef({}); // id -> last on-screen position of the card
+  const colorMapRef = useRef({}); // id -> assigned palette color (sticky)
+  // Drag state for the crown (host transfer) and the boot (kick):
+  // { type: 'crown' | 'boot', x, y, overUserId } while dragging, else null.
+  const [drag, setDrag] = useState(null);
+  const dragRef = useRef(null);
+  const roomRef = useRef(null);
+  const socketRef = useRef(null);
 
-  const allLocked = room && Object.values(room.users).every(u => u.hasVoted);
+  const isHost = !!room?.users?.[userId]?.isHost;
+  const hasVoted = !!room?.users?.[userId]?.hasVoted;
+  const myPoint = room?.users?.[userId]?.point;
+  const revealed = !!room?.revealed;
+
   const userColors = useMemo(() => {
-    // Assign a color from the palette to each user, stable by name
-    const names = room && room.users ? Object.values(room.users).map(u => u.name) : [];
-    const colorMap = {};
-    names.forEach((n, i) => {
-      colorMap[n] = PALETTE[i % PALETTE.length];
+    // Sticky color per userId: once assigned, a player keeps their color for
+    // the whole session, so nobody's card recolors when someone is kicked,
+    // leaves, or joins. New players get the least-used palette color.
+    const map = colorMapRef.current;
+    const ids = room && room.users ? Object.keys(room.users) : [];
+    ids.forEach(id => {
+      if (!map[id]) {
+        const used = ids.filter(i => map[i]).map(i => map[i]);
+        let pick = PALETTE.find(c => !used.includes(c));
+        if (!pick) {
+          const counts = PALETTE.map(c => [c, used.filter(u => u === c).length]);
+          counts.sort((a, b) => a[1] - b[1]);
+          pick = counts[0][0];
+        }
+        map[id] = pick;
+      }
     });
-    return colorMap;
+    return { ...map };
   }, [room]);
 
   // Determine if there is a host in the room
   const hasHost = room && room.users && Object.values(room.users).some(u => u.isHost);
 
-  // Persistent userId logic
-  function getOrCreateUserId() {
-    let userId = localStorage.getItem('userId');
-    if (!userId) {
-      if (window.crypto && window.crypto.randomUUID) {
-        userId = window.crypto.randomUUID();
-      } else {
-        userId = Math.random().toString(36).substr(2, 12);
-      }
-      localStorage.setItem('userId', userId);
-    }
-    return userId;
-  }
+  // Redirect to join page if no name
+  useEffect(() => {
+    if (!name) navigate(`/join/${roomCode}`, { replace: true });
+  }, [name, roomCode, navigate]);
 
   useEffect(() => {
-    const userId = getOrCreateUserId();
+    if (!name) return;
     const sock = getSocket();
     setSocket(sock);
-    sock.emit('join', { userId, name, roomCode });
+    setConnected(sock.connected);
+    const join = () => sock.emit('join', { userId, name, roomCode });
     const handleRoomUpdate = (roomData) => {
       setRoom({ ...roomData });
-      setUser({ userId, name, roomCode });
       setLoading(false);
     };
+    // Re-join on every (re)connect so a dropped socket gets the user back
+    // into the room — without this, updates stop after any reconnect.
+    const handleConnect = () => {
+      setConnected(true);
+      join();
+    };
+    const handleDisconnect = () => setConnected(false);
+    const handleKicked = (payload) => {
+      if (!payload || payload.roomCode === roomCode) navigate('/');
+    };
+    // Departures flagged here get the boot animation instead of the poof.
+    const handleUserKicked = (payload) => {
+      if (payload?.userId) kickedRef.current.add(payload.userId);
+    };
     sock.on('room_update', handleRoomUpdate);
+    sock.on('connect', handleConnect);
+    sock.on('disconnect', handleDisconnect);
+    sock.on('kicked', handleKicked);
+    sock.on('user_kicked', handleUserKicked);
+    if (sock.connected) join();
     return () => {
       sock.off('room_update', handleRoomUpdate);
+      sock.off('connect', handleConnect);
+      sock.off('disconnect', handleDisconnect);
+      sock.off('kicked', handleKicked);
+      sock.off('user_kicked', handleUserKicked);
+      // Leaving the page is a deliberate exit; free the seat immediately.
+      sock.emit('leave_room', { roomCode });
     };
-    // eslint-disable-next-line
-  }, [roomCode, name]);
+  }, [roomCode, name, userId, navigate]);
 
   useEffect(() => {
     if (hasVoted) {
@@ -102,57 +149,115 @@ export default function Room() {
   }, [room?.revealed]);
 
   useEffect(() => {
-    const prevUsers = prevUsersRef.current;
-    const currentUsers = Object.keys(room?.users || {});
-    const leftUsers = prevUsers.filter(id => !currentUsers.includes(id));
-    if (leftUsers.length > 0) {
-      setPoofedUsers(prev => [...prev, ...leftUsers]);
+    const prev = prevUsersRef.current;
+    const current = {};
+    Object.entries(room?.users || {}).forEach(([id, u]) => { current[id] = u.name; });
+    const left = Object.keys(prev).filter(id => !(id in current));
+    if (left.length > 0) {
+      const leftUsers = left.map(id => {
+        const booted = kickedRef.current.has(id);
+        kickedRef.current.delete(id);
+        // Play the exit where the card actually was, not at the grid's end.
+        const rect = cardRectsRef.current[id];
+        delete cardRectsRef.current[id];
+        // The exit card keeps the player's own color.
+        const color = colorMapRef.current[id] || '#fff';
+        delete colorMapRef.current[id];
+        return { id, name: prev[id] || 'User', booted, rect, color };
+      });
+      setPoofedUsers(p => [...p, ...leftUsers]);
       setTimeout(() => {
-        setPoofedUsers(prev => prev.filter(id => !leftUsers.includes(id)));
-      }, 1000);
+        setPoofedUsers(p => p.filter(x => !left.includes(x.id)));
+      }, 1100);
     }
-    prevUsersRef.current = currentUsers;
+    prevUsersRef.current = current;
   }, [room?.users]);
 
-  // Helper: generate 8-char room code (uppercase letters/numbers)
-  function generateRoomCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; ++i) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
-  }
-
-  // Helper: sanitize input (strip HTML tags)
-  function sanitize(str) {
-    return String(str).replace(/<[^>]*>?/gm, '');
-  }
+  // After every render of the grid, remember where each card sits so exit
+  // animations (poof/boot) can play in place after the user is removed.
+  useEffect(() => {
+    Object.keys(room?.users || {}).forEach(id => {
+      const el = document.querySelector(`[data-user-id="${CSS.escape(id)}"]`);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        cardRectsRef.current[id] = { left: r.left, top: r.top };
+      }
+    });
+  }, [room]);
 
   function handleSetStory(e) {
     e.preventDefault();
     if (storyInput.trim()) {
-      socket.emit('set_story', { roomCode: user.roomCode, story: sanitize(storyInput) });
+      socket.emit('set_story', { roomCode, story: sanitize(storyInput) });
       setStoryInput('');
     }
   }
 
   function handleStartPointing() {
-    socket.emit('start_pointing', { roomCode: user.roomCode });
+    socket.emit('start_pointing', { roomCode });
   }
 
   function handlePoint(point) {
-    socket.emit('submit_point', { roomCode: user.roomCode, point });
+    socket.emit('submit_point', { roomCode, point });
   }
 
-  function handleCopy() {
-    navigator.clipboard.writeText(window.location.origin + '/room/' + user.roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
+  // Keep refs fresh so the drag listeners never act on stale state.
+  roomRef.current = room;
+  socketRef.current = socket;
+
+  // A drop is valid if the crown lands on a non-host, or the boot lands on
+  // anyone but yourself.
+  function dragTargetValid(d, targetId, roomState) {
+    if (!d || !targetId) return false;
+    if (d.type === 'crown') return !roomState?.users?.[targetId]?.isHost;
+    if (d.type === 'boot') return targetId !== userId && !!roomState?.users?.[targetId];
+    return false;
   }
 
-  // Host transfer handler
-  function handleTransferHost(targetSocketId) {
-    socket.emit('transfer_host', { roomCode: user.roomCode, targetSocketId });
+  function startDrag(type) {
+    return (e) => {
+      e.preventDefault();
+      const d = { type, x: e.clientX, y: e.clientY, overUserId: null };
+      dragRef.current = d;
+      setDrag(d);
+    };
   }
+
+  useEffect(() => {
+    if (!drag) return;
+    const handleMove = (e) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const card = el && el.closest ? el.closest('[data-user-id]') : null;
+      const overUserId = card ? card.getAttribute('data-user-id') : null;
+      const d = { ...dragRef.current, x: e.clientX, y: e.clientY, overUserId };
+      dragRef.current = d;
+      setDrag(d);
+    };
+    const handleUp = () => {
+      const d = dragRef.current;
+      dragRef.current = null;
+      setDrag(null);
+      const roomState = roomRef.current;
+      const sock = socketRef.current;
+      if (!d || !sock || !dragTargetValid(d, d.overUserId, roomState)) return;
+      if (d.type === 'crown') {
+        sock.emit('transfer_host', { roomCode, targetUserId: d.overUserId });
+      } else {
+        sock.emit('kick_user', { roomCode, targetUserId: d.overUserId });
+      }
+    };
+    document.body.style.cursor = 'grabbing';
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('pointercancel', handleUp);
+    return () => {
+      document.body.style.cursor = '';
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      window.removeEventListener('pointercancel', handleUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!drag]);
 
   function handleStartPointingCrack() {
     setCrack(true);
@@ -167,21 +272,46 @@ export default function Room() {
     try {
       const text = await navigator.clipboard.readText();
       setStoryInput(sanitize(text));
-    } catch (err) {
+    } catch {
       // Optionally show an error or fallback
     }
   }
 
+  if (!name) return null;
+
   if (loading || !room) {
     return (
-      <Box w="100vw" h="100vh" display="flex" alignItems="center" justifyContent="center" fontSize="2xl" color="#ffe600" fontFamily="'Luckiest Guy', 'Bangers', cursive'">
+      <Box w="100vw" h="100vh" display="flex" flexDirection="column" gap={4} alignItems="center" justifyContent="center" fontSize="2xl" color="#ffe600" fontFamily="'Luckiest Guy', 'Bangers', cursive">
         Loading room...
+        {!connected && (
+          <Text fontSize="lg" color="#fff">
+            <span role="img" aria-label="zap">⚡</span> Connecting to server…
+          </Text>
+        )}
       </Box>
     );
   }
 
   return (
     <Box maxW={{ base: "98vw", lg: "1200px" }} w="100%" mx="auto" mt={0} p={{ base: 2, md: 4, lg: 8 }} borderRadius="lg" position="relative" flex="1" display="flex" flexDirection="column">
+      {/* Connection lost banner */}
+      {!connected && (
+        <Box
+          bg="#ff2e63"
+          color="#fff"
+          border="4px solid #fff"
+          borderRadius={16}
+          px={4}
+          py={2}
+          mb={4}
+          textAlign="center"
+          fontWeight="bold"
+          fontSize="lg"
+          role="alert"
+        >
+          <span role="img" aria-label="zap">⚡</span> Connection lost — reconnecting…
+        </Box>
+      )}
       {/* Story at top */}
       <Box mb={6} position="relative">
         <HStack justify="space-between" align="center" mb={2}>
@@ -190,7 +320,7 @@ export default function Room() {
             <Button
               leftIcon={<FaCopy />}
               onClick={() => {
-                navigator.clipboard.writeText(window.location.origin + '/join/' + user.roomCode);
+                navigator.clipboard.writeText(window.location.origin + '/join/' + roomCode);
                 setCopiedInvite(true);
                 setTimeout(() => setCopiedInvite(false), 1200);
               }}
@@ -205,7 +335,7 @@ export default function Room() {
               minW="40px"
               ml={2}
             >
-              {user.roomCode}
+              {roomCode}
             </Button>
           </Tooltip>
         </HStack>
@@ -240,7 +370,7 @@ export default function Room() {
                   value={storyInput}
                   onChange={e => setStoryInput(e.target.value)}
                   required
-                  fontFamily="'Luckiest Guy', 'Bangers', cursive'"
+                  fontFamily="'Luckiest Guy', 'Bangers', cursive"
                   fontWeight="bold"
                   fontSize="lg"
                   bg="#181825"
@@ -257,7 +387,7 @@ export default function Room() {
                 <Button
                   colorScheme="yellow"
                   type="submit"
-                  fontFamily="'Luckiest Guy', 'Bangers', cursive'"
+                  fontFamily="'Luckiest Guy', 'Bangers', cursive"
                   w={{ base: "100%", md: "auto" }}
                   bg="#ffe600"
                   color="#181825"
@@ -300,7 +430,32 @@ export default function Room() {
       </Box>
       <Box mb={4} borderBottom="3px solid #fff" />
       <Box mb={6}>
-        <Heading size="sm" mb={2} color="#aaff00">Participants</Heading>
+        <HStack justify="space-between" align="center" mb={2}>
+          <Heading size="sm" color="#aaff00">Participants</Heading>
+          {/* The boot: host drags it onto a player to kick them */}
+          {isHost && room && Object.keys(room.users).length > 1 && (
+            <Box
+              as="span"
+              role="img"
+              aria-label="Kick boot"
+              title="Grab the boot and drop it on a player to kick them"
+              fontSize="2.4em"
+              cursor="grab"
+              lineHeight={1}
+              onPointerDown={startDrag('boot')}
+              style={{
+                touchAction: 'none',
+                userSelect: 'none',
+                opacity: drag?.type === 'boot' ? 0.25 : 1,
+                transform: 'rotate(15deg)',
+                filter: 'drop-shadow(0 2px 4px #0008)',
+                transition: 'opacity 0.15s',
+              }}
+            >
+              🥾
+            </Box>
+          )}
+        </HStack>
         <SimpleGrid columns={{ base: 2, sm: 3, md: 4, lg: 5 }} spacing={4} minChildWidth="140px" w="100%" pt={hasHost ? "2.5em" : undefined}>
           {room && room.users && Object.entries(room.users).map(([id, u]) => (
             <PlayerCard
@@ -308,33 +463,68 @@ export default function Room() {
               name={u.name}
               isHost={u.isHost}
               hasVoted={u.hasVoted}
-              allLocked={allLocked}
-              color={userColors[u.name]}
+              revealed={revealed}
+              connected={u.connected !== false}
+              color={userColors[id]}
               point={u.point}
-              socketId={id}
-              showTransfer={isHost && id !== user.userId}
-              onTransfer={handleTransferHost}
+              userId={id}
+              onCrownGrab={startDrag('crown')}
+              crownHidden={drag?.type === 'crown'}
+              dropTarget={drag && drag.overUserId === id && dragTargetValid(drag, id, room) ? drag.type : null}
               poof={false}
-            />
-          ))}
-          {poofedUsers.map(id => (
-            <PlayerCard
-              key={id + '-poof'}
-              name={prevUsersRef.current.find(u => u === id) ? room.users[id]?.name || 'User' : 'User'}
-              isHost={false}
-              hasVoted={false}
-              allLocked={false}
-              color={'#fff'}
-              point={null}
-              socketId={id}
-              showTransfer={false}
-              onTransfer={() => {}}
-              poof={true}
             />
           ))}
         </SimpleGrid>
       </Box>
-      <PointingSection 
+      {/* Departed users' exit animations, played at the card's last position */}
+      {poofedUsers.map(({ id, name: poofName, booted, rect, color }) => createPortal(
+        <Box
+          key={id + '-exit'}
+          position="fixed"
+          left={`${rect ? rect.left : 0}px`}
+          top={`${rect ? rect.top : 0}px`}
+          zIndex={2500}
+          pointerEvents="none"
+        >
+          <PlayerCard
+            name={poofName}
+            isHost={false}
+            hasVoted={false}
+            revealed={false}
+            connected={true}
+            color={color}
+            point={null}
+            userId={id}
+            poof={!booted}
+            booted={booted}
+          />
+        </Box>,
+        document.body
+      ))}
+      {/* Floating crown/boot that follows the cursor while dragging */}
+      {drag && createPortal(
+        <Box
+          position="fixed"
+          left={`${drag.x - 26}px`}
+          top={`${drag.y - 26}px`}
+          zIndex={3000}
+          pointerEvents="none"
+          style={{
+            transition: 'transform 0.1s',
+            transform: drag.overUserId && dragTargetValid(drag, drag.overUserId, room)
+              ? 'scale(1.3) rotate(-12deg)'
+              : 'rotate(-12deg)',
+          }}
+        >
+          {drag.type === 'crown' ? (
+            <FaCrown style={{ fontSize: '3em', color: '#ffe600', filter: 'drop-shadow(0 4px 10px #0008)' }} />
+          ) : (
+            <span style={{ fontSize: '2.8em', filter: 'drop-shadow(0 4px 10px #0008)' }} role="img" aria-label="boot">🥾</span>
+          )}
+        </Box>,
+        document.body
+      )}
+      <PointingSection
         room={room}
         hasVoted={hasVoted}
         myPoint={myPoint}
@@ -344,7 +534,7 @@ export default function Room() {
       {/* Results area (slide in when revealed) */}
       <AnimatePresenceFM mode="wait">
         {room?.revealed && (
-          <motionFM.div
+          <Motion.div
             key="results-area"
             initial={{ x: 80, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -362,18 +552,8 @@ export default function Room() {
                 {(() => {
                   const points = Object.values(room.users).map(u => u.point).filter(p => typeof p === 'number');
                   const userIds = room && room.users ? Object.keys(room.users) : [];
-                  const allLocked = userIds.length && userIds.every(id => room.users[id].hasVoted);
                   const lockInTimes = room && room.lockInTimes ? room.lockInTimes : {};
-                  const showResults = room.revealed;
-                  if (!showResults) {
-                    return (
-                      <Box w="100%" textAlign="center" color="#181825" fontSize="lg" py={6}>
-                        <span role="img" aria-label="hourglass">⏳</span> Waiting for all users to lock in...
-                      </Box>
-                    );
-                  }
                   const votesCount = points.length;
-                  const totalCount = Object.keys(room.users).length;
                   const avg = votesCount ? (points.reduce((a, b) => a + b, 0) / votesCount).toFixed(2) : 'N/A';
                   // Calculate median
                   let median = 'N/A';
@@ -388,7 +568,7 @@ export default function Room() {
                     const freq = {};
                     points.forEach(p => { freq[p] = (freq[p] || 0) + 1; });
                     const max = Math.max(...Object.values(freq));
-                    const majorities = Object.entries(freq).filter(([_, v]) => v === max).map(([k]) => k);
+                    const majorities = Object.entries(freq).filter(([, v]) => v === max).map(([k]) => k);
                     majority = majorities.length === 1 ? majorities[0] : majorities.join(', ');
                   }
                   // Fastest Lock-In logic
@@ -397,7 +577,7 @@ export default function Room() {
                     let fastestId = null;
                     let fastestTime = Infinity;
                     for (const id of userIds) {
-                      if (lockInTimes[id] < fastestTime && typeof lockInTimes[id] === 'number') {
+                      if (typeof lockInTimes[id] === 'number' && lockInTimes[id] < fastestTime) {
                         fastestTime = lockInTimes[id];
                         fastestId = id;
                       }
@@ -421,16 +601,12 @@ export default function Room() {
                           display="flex"
                           alignItems="center"
                           gap={2}
-                          style={{ opacity: allLocked ? 1 : 0.5, filter: allLocked ? 'none' : 'grayscale(0.7)' }}
                         >
                           <span role="img" aria-label="zap">⚡</span> Fastest Lock-In: <b style={{ marginLeft: 6 }}>{winner}</b>
-                          {!allLocked && <span style={{ marginLeft: 8, fontSize: '0.7em', fontStyle: 'italic' }}>(waiting...)</span>}
                         </Badge>
                       );
                     }
                   }
-                  // Style for in-progress results
-                  const faded = { opacity: 0.5, filter: 'grayscale(0.7)' };
                   return (
                     <Box
                       mt={4}
@@ -456,9 +632,8 @@ export default function Room() {
                         textAlign="center"
                         whiteSpace="normal"
                         wordBreak="break-word"
-                        style={allLocked ? {} : faded}
                       >
-                        Avg: {avg} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
+                        Avg: {avg}
                       </Badge>
                       <Badge
                         className="card-pink"
@@ -473,9 +648,8 @@ export default function Room() {
                         textAlign="center"
                         whiteSpace="normal"
                         wordBreak="break-word"
-                        style={allLocked ? {} : faded}
                       >
-                        Median: {median} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
+                        Median: {median}
                       </Badge>
                       <Badge
                         className="card-yellow"
@@ -490,9 +664,8 @@ export default function Room() {
                         textAlign="center"
                         whiteSpace="normal"
                         wordBreak="break-word"
-                        style={allLocked ? {} : faded}
                       >
-                        Majority: {majority} {!allLocked && <span style={{ fontSize: '0.7em', fontStyle: 'italic' }}>(partial)</span>}
+                        Majority: {majority}
                       </Badge>
                       {fastestBadge && (
                         <Box display={{ base: 'flex', sm: 'block' }} justifyContent="center" w={{ base: '100%', sm: 'auto' }}>
@@ -504,36 +677,9 @@ export default function Room() {
                 })()}
               </Box>
             </Box>
-          </motionFM.div>
+          </Motion.div>
         )}
       </AnimatePresenceFM>
     </Box>
   );
-} 
-
-<style>{`
-@keyframes comicPop {
-  0% { transform: scale(1) rotate(0deg);}
-  30% { transform: scale(1.08) rotate(-2deg);}
-  60% { transform: scale(0.98) rotate(1deg);}
-  100% { transform: scale(1) rotate(0deg);}
 }
-
-@keyframes crackDisappear {
-  0% { transform: scale(1) rotate(0deg); opacity: 1; }
-  20% { transform: scale(1.05) skewX(-10deg) rotate(-3deg); }
-  40% { transform: scale(1.1, 0.95) skewX(10deg) rotate(3deg); }
-  60% { transform: scale(0.9, 1.1) skewX(-8deg) rotate(-2deg); opacity: 0.7; }
-  80% { transform: scale(0.7, 1.2) skewX(12deg) rotate(6deg); opacity: 0.4; }
-  100% { transform: scale(0.2, 0.2) skewX(0deg) rotate(0deg); opacity: 0; }
-}
-/* Prevent comic-pop animation on hover/focus/active for this button */
-.crack-disappear.comic-pop:hover,
-.crack-disappear.comic-pop:focus,
-.crack-disappear.comic-pop:active,
-.comic-pop:hover,
-.comic-pop:focus,
-.comic-pop:active {
-  animation: none !important;
-}
-`}</style> 

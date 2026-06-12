@@ -30,6 +30,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: #181825;
   color: #f8f8f8;
+  /* Cards animated off-screen (the kick) must not create a horizontal scrollbar */
+  overflow-x: hidden;
 }
 
 html, body, #root {

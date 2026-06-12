@@ -1,9 +1,9 @@
-import React from 'react';
+﻿import React from 'react';
 import { useState, useEffect, Suspense, lazy } from 'react';
-import { Box, Heading, IconButton, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, useDisclosure, Button, HStack, Input, VStack, Text, Flex } from '@chakra-ui/react';
+import { Box, Heading, Button, HStack, Input, VStack, Text } from '@chakra-ui/react';
 import { FaInfoCircle } from 'react-icons/fa';
 import { Routes, Route, useNavigate, useParams, useLocation, Link } from 'react-router-dom';
-import { AnimatePresence as AnimatePresenceFM, motion as motionFM } from 'framer-motion';
+import { AnimatePresence as AnimatePresenceFM, motion as Motion } from 'framer-motion';
 import '../../styles/comic-font.css';
 import DarkModeModal from '../../components/DarkModeModal';
 import AppHeader from '../../components/Header';
@@ -20,7 +20,7 @@ function generateRoomCode() {
   return code;
 }
 
-function LandingForm({ mode, setMode, name, setName, roomCode, setRoomCode, error, handleSubmit }) {
+function LandingForm({ mode, name, setName, roomCode, setRoomCode, error, handleSubmit }) {
   return (
     <form onSubmit={handleSubmit}>
       <VStack spacing={4} align="stretch">
@@ -115,7 +115,7 @@ function Landing() {
         border="8px solid #fff"
         bg="#222"
         boxShadow="0 8px 32px #0008"
-        fontFamily="'Luckiest Guy', 'Bangers', cursive'"
+        fontFamily="'Luckiest Guy', 'Bangers', cursive"
         color="#fff"
         textAlign="center"
         zIndex={1}
@@ -146,7 +146,6 @@ function Landing() {
         </HStack>
         <LandingForm
           mode={mode}
-          setMode={setMode}
           name={name}
           setName={setName}
           roomCode={roomCode}
@@ -161,7 +160,7 @@ function Landing() {
 
 function ComicSuspenseFallback() {
   return (
-    <Box w="100vw" h="60vh" display="flex" alignItems="center" justifyContent="center" fontFamily="'Luckiest Guy', 'Bangers', cursive'" fontSize="3xl" color="#ffe600" textShadow="-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 2px 8px #000">
+    <Box w="100vw" h="60vh" display="flex" alignItems="center" justifyContent="center" fontFamily="'Luckiest Guy', 'Bangers', cursive" fontSize="3xl" color="#ffe600" textShadow="-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 2px 8px #000">
       <span role="img" aria-label="bam">💥</span> BAM! Loading...
     </Box>
   );
@@ -187,14 +186,6 @@ function App() {
     }
   }, [location.pathname]);
 
-  function handleJoinRoom({ name, roomCode }) {
-    setCurrentUser({ name });
-    setCurrentRoomCode(roomCode);
-  }
-
-  // Dynamically set background color
-  const bgColor = location.pathname === '/' ? '#181825' : '#a259f7';
-
   return (
     <Box minH="100vh" display="flex" flexDirection="column" position="relative" fontFamily="'Luckiest Guy', 'Bangers', cursive">
       <AppHeader user={headerUser} roomCode={headerRoomCode} />
@@ -204,7 +195,7 @@ function App() {
         <AnimatePresenceFM mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={
-              <motionFM.div
+              <Motion.div
                 initial={{ x: '-100vw', opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '100vw', opacity: 0 }}
@@ -212,10 +203,10 @@ function App() {
                 style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}
               >
                 <Landing />
-              </motionFM.div>
+              </Motion.div>
             } />
             <Route path="/join/:roomCode" element={
-              <motionFM.div
+              <Motion.div
                 initial={{ x: '100vw', opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '-100vw', opacity: 0 }}
@@ -223,10 +214,10 @@ function App() {
                 style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
               >
                 <JoinRoomPage />
-              </motionFM.div>
+              </Motion.div>
             } />
             <Route path="/room/:roomCode" element={
-              <motionFM.div
+              <Motion.div
                 initial={{ x: '-100vw', opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: '100vw', opacity: 0 }}
@@ -236,10 +227,10 @@ function App() {
                 <Suspense fallback={<ComicSuspenseFallback />}>
                   <Room />
                 </Suspense>
-              </motionFM.div>
+              </Motion.div>
             } />
             <Route path="*" element={
-              <motionFM.div
+              <Motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
@@ -247,7 +238,7 @@ function App() {
                 style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
               >
                 <NotFound />
-              </motionFM.div>
+              </Motion.div>
             } />
           </Routes>
         </AnimatePresenceFM>
@@ -258,7 +249,7 @@ function App() {
 
 function NotFound() {
   return (
-    <Box minH="60vh" display="flex" flexDirection="column" alignItems="center" justifyContent="center" fontFamily="'Luckiest Guy', 'Bangers', cursive'" color="#fff" flex="1">
+    <Box minH="60vh" display="flex" flexDirection="column" alignItems="center" justifyContent="center" fontFamily="'Luckiest Guy', 'Bangers', cursive" color="#fff" flex="1">
       <Box fontSize="6xl" mb={2}>
         💥
       </Box>
